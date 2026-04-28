@@ -1,11 +1,12 @@
+import './load-env';
 import 'express-async-errors';
 import express, { Request, Response, NextFunction } from 'express';
-
 import cors from 'cors';
 import helmet from 'helmet';
 import jwt from 'jsonwebtoken';
 import { AuthService } from './services/auth.service';
 import { UsernameService } from './services/username.service';
+import { prisma } from './db/prisma';
 import { logger, httpLogger } from '@chatognito/logger';
 
 const app = express();
@@ -75,6 +76,19 @@ app.put('/api/v1/users/me/username', requireAuth, async (req: AuthRequest, res: 
   res.status(200).json({ message: 'Username updated successfully.', cooldownEndsAt });
 });
 
+app.get(
+  '/api/v1/users/me/username/history',
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.user!.userId;
+    const history = await prisma.usernameHistory.findMany({
+      where: { userId },
+      orderBy: { changedAt: 'desc' },
+    });
+    res.status(200).json(history);
+  },
+);
+
 // Global Error Handler
 app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   const isExpectedError = [
@@ -110,6 +124,10 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
 
 const PORT = process.env.PORT || 3001;
 
-app.listen(PORT, () => {
-  logger.info(`Auth Service listening on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    logger.info(`Auth Service listening on port ${PORT}`);
+  });
+}
+
+export { app };
