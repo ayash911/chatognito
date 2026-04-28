@@ -77,6 +77,17 @@ describe('AuthService', () => {
       );
     });
 
+    it('should throw ACCOUNT_DELETED if user is soft-deleted', async () => {
+      (prisma.user.findUnique as jest.Mock).mockResolvedValueOnce({
+        email: 'test@example.com',
+        passwordHash: 'hashed',
+        deletedAt: new Date(),
+      });
+      await expect(AuthService.login('test@example.com', 'password')).rejects.toThrow(
+        'ACCOUNT_DELETED',
+      );
+    });
+
     it('should return token and user data on successful login', async () => {
       const mockUser = {
         id: '1',

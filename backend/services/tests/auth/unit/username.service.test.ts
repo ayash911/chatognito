@@ -225,5 +225,11 @@ describe('UsernameService', () => {
       const nextChangeDate = await UsernameService.setUsername('user-1', 'exact_90_days');
       expect(nextChangeDate.getTime()).toBeGreaterThan(Date.now());
     });
+
+    it('should throw USERNAME_RESERVED for restricted names', async () => {
+      await expect(UsernameService.setUsername('user-1', 'admin')).rejects.toThrow(
+        'USERNAME_RESERVED',
+      );
+    });
   });
 });

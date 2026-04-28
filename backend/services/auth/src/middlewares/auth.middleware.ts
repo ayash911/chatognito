@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { prisma } from '../db/prisma';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretfallback';
 
@@ -10,7 +11,7 @@ export interface AuthRequest extends Request {
   };
 }
 
-export const requireAuth = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const requireAuth = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'UNAUTHORIZED' });
@@ -22,6 +23,17 @@ export const requireAuth = (req: AuthRequest, res: Response, next: NextFunction)
       userId: string;
       email: string;
     };
+
+    // Edge Case: Phantom User Check
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, deletedAt: true },
+    });
+
+    if (!user || user.deletedAt) {
+      return res.status(401).json({ error: 'USER_REMOVED' });
+    }
+
     req.user = decoded;
     next();
   } catch (_err) {

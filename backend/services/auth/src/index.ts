@@ -29,6 +29,9 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
     'COOLDOWN_ACTIVE',
     'INVALID_FORMAT',
     'INVALID_CREDENTIALS',
+    'ACCOUNT_DELETED',
+    'USERNAME_RESERVED',
+    'USER_REMOVED',
   ].some((msg) => err.message.includes(msg));
 
   if (isExpectedError) {
@@ -55,6 +58,15 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   }
   if (err.message === 'USER_NOT_FOUND') {
     return res.status(404).json({ error: err.message });
+  }
+  if (err.message === 'ACCOUNT_DELETED') {
+    return res.status(403).json({ error: err.message });
+  }
+  if (err.message === 'USERNAME_RESERVED') {
+    return res.status(400).json({ error: err.message });
+  }
+  if (err.message === 'USER_REMOVED') {
+    return res.status(401).json({ error: err.message });
   }
 
   res.status(500).json({ error: 'INTERNAL_SERVER_ERROR' });

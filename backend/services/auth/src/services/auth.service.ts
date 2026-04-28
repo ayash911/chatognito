@@ -31,6 +31,10 @@ export class AuthService {
       throw new Error('INVALID_CREDENTIALS');
     }
 
+    if (user.deletedAt) {
+      throw new Error('ACCOUNT_DELETED');
+    }
+
     const isValid = await bcrypt.compare(passwordHash, user.passwordHash);
     if (!isValid) {
       throw new Error('INVALID_CREDENTIALS');

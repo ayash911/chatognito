@@ -4,6 +4,15 @@ import { Prisma } from '@chatognito/database';
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/;
 const COOLDOWN_DAYS = 90;
+const RESERVED_USERNAMES = new Set([
+  'admin',
+  'support',
+  'help',
+  'root',
+  'chatognito',
+  'system',
+  'official',
+]);
 
 export class UsernameService {
   /**
@@ -17,6 +26,10 @@ export class UsernameService {
       throw new Error(
         'INVALID_FORMAT: Username must be 3-20 characters, alphanumeric or underscores.',
       );
+    }
+
+    if (RESERVED_USERNAMES.has(username)) {
+      throw new Error('USERNAME_RESERVED');
     }
 
     // 1. Acquire Distributed Lock

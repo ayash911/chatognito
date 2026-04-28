@@ -83,4 +83,30 @@ describe('Auth Integration Tests (Live Server)', () => {
     expect(history.length).toBe(1);
     expect(history[0].oldUsername).toBe('integration_tester_1');
   });
+
+  it('should return 403 when logging in as a soft-deleted user', async () => {
+    // 1. Signup a user
+    const email = `deleted-${Date.now()}@example.com`;
+    const signupRes = await request(requestTarget)
+      .post('/api/v1/auth/signup')
+      .send({ email, password: 'password123' });
+    const localUserId = signupRes.body.id;
+
+    // 2. Soft-delete the user in the DB
+    await prisma.user.update({
+      where: { id: localUserId },
+      data: { deletedAt: new Date() },
+    });
+
+    // 3. Try to login
+    const res = await request(requestTarget)
+      .post('/api/v1/auth/login')
+      .send({ email, password: 'password123' });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toBe('ACCOUNT_DELETED');
+
+    // Cleanup
+    await prisma.user.delete({ where: { id: localUserId } });
+  });
 });
