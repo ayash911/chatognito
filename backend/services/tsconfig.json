@@ -13,7 +13,8 @@
     "isolatedModules": true,
     "baseUrl": ".",
     "paths": {
-      "@auth/*": ["auth/src/*"]
+      "@auth/*": ["auth/src/*"],
+      "@common/*": ["common/src/*"]
     }
   },
   "include": ["*/src/**/*.ts", "tests/**/*.ts"],

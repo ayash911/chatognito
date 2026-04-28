@@ -1,4 +1,4 @@
-import { prisma } from '../db/prisma';
+import { prisma } from '@common/db/prisma';
 import { AuthService } from './auth.service';
 import { OAuthProvider } from '@chatognito/database';
 

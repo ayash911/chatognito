@@ -1,7 +1,7 @@
 import { ProfileService } from '@auth/services/profile.service';
-import { prisma } from '@auth/db/prisma';
+import { prisma } from '@common/db/prisma';
 
-jest.mock('@auth/db/prisma', () => ({
+jest.mock('@common/db/prisma', () => ({
   prisma: {
     user: {
       update: jest.fn(),

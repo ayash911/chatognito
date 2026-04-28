@@ -24,10 +24,10 @@ export const httpLogger = pinoHttp({
   autoLogging: {
     ignore: (req) => req.url === '/health' || req.url === '/favicon.ico',
   },
-  customSuccessMessage: (req, res) => {
-    return `HTTP ${req.method} ${req.url} -> ${res.statusCode}`;
+  customSuccessMessage: (req, res, responseTime) => {
+    return `${req.method} ${req.url} ${res.statusCode} (${responseTime}ms)`;
   },
-  customErrorMessage: (req, _res, err) => {
-    return `HTTP ${req.method} ${req.url} -> ERROR: ${err.message}`;
+  customErrorMessage: (req, res, err) => {
+    return `${req.method} ${req.url} ERROR: ${err.message} (${res.statusCode})`;
   },
 });

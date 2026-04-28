@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../db/prisma';
+import { prisma } from '@common/db/prisma';
 import { User } from '@chatognito/database';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretfallback'; // In production, this must be set

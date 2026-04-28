@@ -1,9 +1,9 @@
 import { AuthService } from '@auth/services/auth.service';
-import { prisma } from '@auth/db/prisma';
+import { prisma } from '@common/db/prisma';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-jest.mock('@auth/db/prisma', () => ({
+jest.mock('@common/db/prisma', () => ({
   prisma: {
     user: {
       findUnique: jest.fn(),

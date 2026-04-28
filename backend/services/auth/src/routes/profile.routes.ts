@@ -1,19 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { UsernameService } from '../services/username.service';
 import { ProfileService } from '../services/profile.service';
-import { prisma } from '../db/prisma';
+import { prisma } from '@common/db/prisma';
 import { AuthRequest, requireAuth } from '../middlewares/auth.middleware';
 import { z } from 'zod';
 
-export const userRouter = Router();
-
-// Get public profile (Must be before specific /me routes if we used simple parameter routes, but /me is safe if handled carefully, though here /:username could conflict with /me if not ordered correctly. Since /me is under /me, we are fine, wait, /:username matches /me! We should handle that or put /me before /:username.)
-// Wait, the routes are:
-// /api/v1/users/me/username
-// /api/v1/users/me/username/history
-// /api/v1/users/me
-// /api/v1/users/:username
-// We must define /me routes before /:username.
+export const profileRouter = Router();
 
 const profileUpdateSchema = z.object({
   displayName: z.string().max(100).optional(),
@@ -24,20 +16,20 @@ const profileUpdateSchema = z.object({
 });
 
 // Update profile
-userRouter.patch('/me', requireAuth, async (req: AuthRequest, res: Response) => {
+profileRouter.patch('/me', requireAuth, async (req: AuthRequest, res: Response) => {
   const data = profileUpdateSchema.parse(req.body);
   const user = await ProfileService.updateProfile(req.user!.userId, data);
   res.json(user);
 });
 
 // Deactivate account
-userRouter.delete('/me', requireAuth, async (req: AuthRequest, res: Response) => {
+profileRouter.delete('/me', requireAuth, async (req: AuthRequest, res: Response) => {
   await ProfileService.deactivateAccount(req.user!.userId);
   res.json({ success: true, message: 'ACCOUNT_DEACTIVATED' });
 });
 
 // Update username
-userRouter.put('/me/username', requireAuth, async (req: AuthRequest, res: Response) => {
+profileRouter.put('/me/username', requireAuth, async (req: AuthRequest, res: Response) => {
   const { username } = req.body;
   const userId = req.user!.userId;
 
@@ -50,7 +42,7 @@ userRouter.put('/me/username', requireAuth, async (req: AuthRequest, res: Respon
 });
 
 // Get username history
-userRouter.get('/me/username/history', requireAuth, async (req: AuthRequest, res: Response) => {
+profileRouter.get('/me/username/history', requireAuth, async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const history = await prisma.usernameHistory.findMany({
     where: { userId },
@@ -60,7 +52,7 @@ userRouter.get('/me/username/history', requireAuth, async (req: AuthRequest, res
 });
 
 // Enable 2FA (Mock)
-userRouter.post('/me/2fa/enable', requireAuth, async (req: AuthRequest, res: Response) => {
+profileRouter.post('/me/2fa/enable', requireAuth, async (req: AuthRequest, res: Response) => {
   const secret = 'MOCK_SECRET_' + Math.random().toString(36).substring(7);
   await prisma.user.update({
     where: { id: req.user!.userId },
@@ -73,7 +65,7 @@ userRouter.post('/me/2fa/enable', requireAuth, async (req: AuthRequest, res: Res
 });
 
 // Get public profile (Must be last to avoid catching /me)
-userRouter.get('/:username', async (req: Request, res: Response) => {
+profileRouter.get('/:username', async (req: Request, res: Response) => {
   const profile = await ProfileService.getPublicProfile(req.params.username);
   res.json(profile);
 });

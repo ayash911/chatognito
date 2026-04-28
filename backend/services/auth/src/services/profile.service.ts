@@ -1,4 +1,4 @@
-import { prisma } from '../db/prisma';
+import { prisma } from '@common/db/prisma';
 
 export class ProfileService {
   /**

@@ -1,5 +1,5 @@
-import { redis } from '../db/redis';
-import { prisma } from '../db/prisma';
+import { redis } from '@common/db/redis';
+import { prisma } from '@common/db/prisma';
 import { Prisma } from '@chatognito/database';
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/;

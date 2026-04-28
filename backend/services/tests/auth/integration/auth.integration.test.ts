@@ -1,6 +1,6 @@
 import request from 'supertest';
-import { prisma } from '@auth/db/prisma';
-import { redis } from '@auth/db/redis';
+import { prisma } from '@common/db/prisma';
+import { redis } from '@common/db/redis';
 
 import { app } from '@auth/index';
 
@@ -32,7 +32,7 @@ describe('Auth Integration Tests (Live Server)', () => {
 
   it('should sign up a new user', async () => {
     const res = await request(requestTarget)
-      .post('/api/v1/auth/signup')
+      .post('/identity/auth/signup')
       .send({ email: testEmail, password: testPassword });
 
     expect(res.status).toBe(201);
@@ -42,7 +42,7 @@ describe('Auth Integration Tests (Live Server)', () => {
 
   it('should login and get a token', async () => {
     const res = await request(requestTarget)
-      .post('/api/v1/auth/login')
+      .post('/identity/auth/login')
       .send({ email: testEmail, password: testPassword });
 
     expect(res.status).toBe(200);
@@ -53,7 +53,7 @@ describe('Auth Integration Tests (Live Server)', () => {
   it('should set a username and verify the history table works', async () => {
     // 1. Set first username
     const res1 = await request(requestTarget)
-      .put('/api/v1/users/me/username')
+      .put('/identity/profile/me/username')
       .set('Authorization', `Bearer ${token}`)
       .send({ username: 'integration_tester_1' });
 
@@ -69,7 +69,7 @@ describe('Auth Integration Tests (Live Server)', () => {
 
     // 3. Set second username
     const res2 = await request(requestTarget)
-      .put('/api/v1/users/me/username')
+      .put('/identity/profile/me/username')
       .set('Authorization', `Bearer ${token}`)
       .send({ username: 'integration_tester_2' });
 
@@ -88,7 +88,7 @@ describe('Auth Integration Tests (Live Server)', () => {
     // 1. Signup a user
     const email = `deleted-${Date.now()}@example.com`;
     const signupRes = await request(requestTarget)
-      .post('/api/v1/auth/signup')
+      .post('/identity/auth/signup')
       .send({ email, password: 'password123' });
     const localUserId = signupRes.body.id;
 
@@ -100,7 +100,7 @@ describe('Auth Integration Tests (Live Server)', () => {
 
     // 3. Try to login
     const res = await request(requestTarget)
-      .post('/api/v1/auth/login')
+      .post('/identity/auth/login')
       .send({ email, password: 'password123' });
 
     expect(res.status).toBe(403);

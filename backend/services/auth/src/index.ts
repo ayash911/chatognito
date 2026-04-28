@@ -1,4 +1,4 @@
-import './load-env';
+import '../../common/src/load-env';
 import 'express-async-errors';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
@@ -6,7 +6,7 @@ import helmet from 'helmet';
 import { logger, httpLogger } from '@chatognito/logger';
 
 import { authRouter } from './routes/auth.routes';
-import { userRouter } from './routes/user.routes';
+import { profileRouter } from './routes/profile.routes';
 import { z } from 'zod';
 
 const app = express();
@@ -17,8 +17,8 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use('/api/v1/auth', authRouter);
-app.use('/api/v1/users', userRouter);
+app.use('/identity/auth', authRouter);
+app.use('/identity/profile', profileRouter);
 
 // Global Error Handler
 app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {

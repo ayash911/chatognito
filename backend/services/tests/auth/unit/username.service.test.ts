@@ -1,8 +1,8 @@
 import { UsernameService } from '@auth/services/username.service';
-import { redis } from '@auth/db/redis';
-import { prisma } from '@auth/db/prisma';
+import { redis } from '@common/db/redis';
+import { prisma } from '@common/db/prisma';
 
-jest.mock('@auth/db/redis', () => ({
+jest.mock('@common/db/redis', () => ({
   redis: {
     set: jest.fn(),
     del: jest.fn(),
@@ -10,7 +10,7 @@ jest.mock('@auth/db/redis', () => ({
   },
 }));
 
-jest.mock('@auth/db/prisma', () => ({
+jest.mock('@common/db/prisma', () => ({
   prisma: {
     $transaction: jest.fn(),
     user: {

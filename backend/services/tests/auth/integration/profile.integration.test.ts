@@ -1,6 +1,6 @@
 import request from 'supertest';
-import { prisma } from '@auth/db/prisma';
-import { redis } from '@auth/db/redis';
+import { prisma } from '@common/db/prisma';
+import { redis } from '@common/db/redis';
 import { app } from '@auth/index';
 
 const requestTarget = process.env.API_URL || app;
@@ -16,11 +16,11 @@ describe('Profile Integration Tests', () => {
     await prisma.$connect();
     // Setup test user
     await request(requestTarget)
-      .post('/api/v1/auth/signup')
+      .post('/identity/auth/signup')
       .send({ email: testEmail, password: testPassword });
 
     const loginRes = await request(requestTarget)
-      .post('/api/v1/auth/login')
+      .post('/identity/auth/login')
       .send({ email: testEmail, password: testPassword });
 
     token = loginRes.body.token;
@@ -29,7 +29,7 @@ describe('Profile Integration Tests', () => {
 
     // Set username so we can test public profile
     await request(requestTarget)
-      .put('/api/v1/users/me/username')
+      .put('/identity/profile/me/username')
       .set('Authorization', `Bearer ${token}`)
       .send({ username });
   });
@@ -46,7 +46,7 @@ describe('Profile Integration Tests', () => {
 
   it('should update profile fields', async () => {
     const res = await request(requestTarget)
-      .patch('/api/v1/users/me')
+      .patch('/identity/profile/me')
       .set('Authorization', `Bearer ${token}`)
       .send({
         displayName: 'Integration Tester',
@@ -59,7 +59,7 @@ describe('Profile Integration Tests', () => {
   });
 
   it('should get public profile with full details if public', async () => {
-    const res = await request(requestTarget).get(`/api/v1/users/${username}`);
+    const res = await request(requestTarget).get(`/identity/profile/${username}`);
 
     expect(res.status).toBe(200);
     expect(res.body.username).toBe(username);
@@ -69,7 +69,7 @@ describe('Profile Integration Tests', () => {
 
   it('should update privacy settings', async () => {
     const res = await request(requestTarget)
-      .patch('/api/v1/users/me')
+      .patch('/identity/profile/me')
       .set('Authorization', `Bearer ${token}`)
       .send({ isPrivate: true });
 
@@ -78,7 +78,7 @@ describe('Profile Integration Tests', () => {
   });
 
   it('should hide private details in public profile', async () => {
-    const res = await request(requestTarget).get(`/api/v1/users/${username}`);
+    const res = await request(requestTarget).get(`/identity/profile/${username}`);
 
     expect(res.status).toBe(200);
     expect(res.body.isPrivate).toBe(true);
@@ -88,7 +88,7 @@ describe('Profile Integration Tests', () => {
 
   it('should enable 2FA and return a secret', async () => {
     const res = await request(requestTarget)
-      .post('/api/v1/users/me/2fa/enable')
+      .post('/identity/profile/me/2fa/enable')
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
