@@ -29,6 +29,12 @@ model User {
   conversations           ConversationParticipant[]
   messagesSent            Message[]
 
+  // Social Relations
+  followers               Follow[] @relation("following")
+  following               Follow[] @relation("follower")
+  blockedUsers            Block[]  @relation("blocker")
+  blockedBy               Block[]  @relation("blocked")
+
   @@map("users")
   @@index([username])
   @@index([email])
@@ -64,6 +70,40 @@ model UsernameHistory {
 
   @@map("username_history")
   @@index([userId])
+}
+
+// -----------------------------------------------------------------------------
+// SOCIAL DOMAIN
+// -----------------------------------------------------------------------------
+
+model Follow {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  followerId  String   @map("follower_id") @db.Uuid
+  followingId String   @map("following_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  follower    User     @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@map("follows")
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model Block {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  blockerId   String   @map("blocker_id") @db.Uuid
+  blockedId   String   @map("blocked_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  blocker     User     @relation("blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked     User     @relation("blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@map("blocks")
+  @@index([blockerId])
+  @@index([blockedId])
 }
 
 // -----------------------------------------------------------------------------

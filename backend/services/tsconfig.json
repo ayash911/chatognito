@@ -15,7 +15,8 @@
     "paths": {
       "@auth/*": ["auth/src/*"],
       "@common/*": ["common/src/*"],
-      "@messaging/*": ["messaging/src/*"]
+      "@messaging/*": ["messaging/src/*"],
+      "@social/*": ["social/src/*"]
     }
   },
   "include": ["*/src/**/*.ts", "tests/**/*.ts"],

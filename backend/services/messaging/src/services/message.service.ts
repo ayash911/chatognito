@@ -11,10 +11,35 @@ export class MessageService {
     if (trimmed.length > 4000) throw new Error('MESSAGE_TOO_LONG');
 
     // Authorization: sender must be a participant
-    const participant = await prisma.conversationParticipant.findUnique({
-      where: { conversationId_userId: { conversationId, userId: senderId } },
+    const conversation = await prisma.conversation.findUnique({
+      where: { id: conversationId },
+      include: {
+        participants: {
+          select: { userId: true },
+        },
+      },
     });
-    if (!participant) throw new Error('NOT_A_PARTICIPANT');
+
+    if (!conversation) throw new Error('CONVERSATION_NOT_FOUND');
+
+    const isParticipant = conversation.participants.some((p) => p.userId === senderId);
+    if (!isParticipant) throw new Error('NOT_A_PARTICIPANT');
+
+    // If direct conversation, check for blocks
+    if (conversation.type === 'direct') {
+      const otherParticipant = conversation.participants.find((p) => p.userId !== senderId);
+      if (otherParticipant) {
+        const block = await prisma.block.findFirst({
+          where: {
+            OR: [
+              { blockerId: senderId, blockedId: otherParticipant.userId },
+              { blockerId: otherParticipant.userId, blockedId: senderId },
+            ],
+          },
+        });
+        if (block) throw new Error('FORBIDDEN');
+      }
+    }
 
     // Create message and bump the conversation's updatedAt atomically
     const [message] = await prisma.$transaction([

@@ -15,9 +15,21 @@ export class ConversationService {
       where: { id: { in: [userAId, userBId] }, deletedAt: null },
       select: { id: true },
     });
+
     if (users.length !== 2) {
       throw new Error('USER_NOT_FOUND');
     }
+
+    // Check for blocks
+    const block = await prisma.block.findFirst({
+      where: {
+        OR: [
+          { blockerId: userAId, blockedId: userBId },
+          { blockerId: userBId, blockedId: userAId },
+        ],
+      },
+    });
+    if (block) throw new Error('FORBIDDEN');
 
     // Find an existing direct conversation shared by both users
     const existing = await prisma.conversation.findFirst({

@@ -18,6 +18,9 @@ jest.mock('@common/db/prisma', () => ({
       delete: jest.fn(),
       update: jest.fn(),
     },
+    block: {
+      findFirst: jest.fn(),
+    },
     message: {
       create: jest.fn(),
       findUnique: jest.fn(),
@@ -33,7 +36,10 @@ const mockUsers = (ids: string[]) => {
 };
 
 describe('ConversationService Unit Tests', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    ((prisma as any).block.findFirst as jest.Mock).mockResolvedValue(null);
+  });
 
   describe('getOrCreateDirect', () => {
     it('should throw CANNOT_MESSAGE_SELF when both user IDs are identical', async () => {

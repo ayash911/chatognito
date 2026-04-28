@@ -4,9 +4,10 @@
   "private": true,
   "description": "Container for Chatognito backend services",
   "scripts": {
-    "dev": "concurrently --raw \"npm run dev:auth\" \"npm run dev:messaging\"",
+    "dev": "concurrently --raw \"npm run dev:auth\" \"npm run dev:messaging\" \"npm run dev:social\"",
     "dev:auth": "nodemon auth/src/index.ts",
     "dev:messaging": "nodemon messaging/src/index.ts",
+    "dev:social": "nodemon social/src/index.ts",
     "test": "jest tests --runInBand",
     "test:unit": "jest tests/auth/unit",
     "test:integration": "jest tests/auth/integration --runInBand"

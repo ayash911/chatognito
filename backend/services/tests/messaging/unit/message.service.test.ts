@@ -8,26 +8,44 @@ jest.mock('@common/db/prisma', () => ({
       findUnique: jest.fn(),
       update: jest.fn(),
     },
+    conversation: {
+      update: jest.fn(),
+      findUnique: jest.fn(),
+    },
+    block: {
+      findFirst: jest.fn(),
+    },
     message: {
       create: jest.fn(),
       findMany: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
     },
-    conversation: {
-      update: jest.fn(),
-    },
     $transaction: jest.fn(),
   },
 }));
 
-const mockParticipant = (exists: boolean) =>
-  (prisma.conversationParticipant.findUnique as jest.Mock).mockResolvedValue(
-    exists ? { userId: 'u1', conversationId: 'c1' } : null,
+const mockParticipant = (exists: boolean, type: string = 'direct', isMember: boolean = true) => {
+  (prisma.conversation.findUnique as jest.Mock).mockResolvedValue(
+    exists
+      ? {
+          id: 'c1',
+          type,
+          participants: isMember ? [{ userId: 'u1' }, { userId: 'u2' }] : [{ userId: 'u2' }],
+        }
+      : null,
   );
+  (prisma.conversationParticipant.findUnique as jest.Mock).mockResolvedValue(
+    exists && isMember ? { userId: 'u1', conversationId: 'c1' } : null,
+  );
+};
 
 describe('MessageService Unit Tests', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    ((prisma as any).block.findFirst as jest.Mock).mockResolvedValue(null);
+    mockParticipant(true); // Default to existing and being a member
+  });
 
   describe('send', () => {
     it('should throw MESSAGE_EMPTY for blank content', async () => {
@@ -41,7 +59,7 @@ describe('MessageService Unit Tests', () => {
     });
 
     it('should throw NOT_A_PARTICIPANT if the sender is not in the conversation', async () => {
-      mockParticipant(false);
+      mockParticipant(true, 'direct', false);
       await expect(MessageService.send('c1', 'u1', 'Hello')).rejects.toThrow('NOT_A_PARTICIPANT');
     });
 
