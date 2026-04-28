@@ -7,6 +7,7 @@ import { logger, httpLogger } from '@chatognito/logger';
 
 import { authRouter } from './routes/auth.routes';
 import { profileRouter } from './routes/profile.routes';
+import { securityRouter } from './routes/security.routes';
 import { z } from 'zod';
 
 const app = express();
@@ -19,6 +20,7 @@ app.use(express.json());
 // Routes
 app.use('/identity/auth', authRouter);
 app.use('/identity/profile', profileRouter);
+app.use('/identity/security', securityRouter);
 
 // Global Error Handler
 app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {

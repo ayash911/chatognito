@@ -34,6 +34,7 @@ model User {
   following               Follow[] @relation("follower")
   blockedUsers            Block[]  @relation("blocker")
   blockedBy               Block[]  @relation("blocked")
+  keyBundle               KeyBundle?
 
   @@map("users")
   @@index([username])
@@ -157,8 +158,10 @@ model Message {
   id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   conversationId String    @map("conversation_id") @db.Uuid
   senderId       String    @map("sender_id") @db.Uuid
-  content        String    @db.Text
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  content          String    @db.Text
+  isEncrypted      Boolean   @default(false) @map("is_encrypted")
+  encryptionHeader String?   @map("encryption_header") @db.Text
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
   deletedAt      DateTime? @map("deleted_at") @db.Timestamptz
 
@@ -168,4 +171,33 @@ model Message {
   @@map("messages")
   @@index([conversationId, createdAt])
   @@index([senderId])
+}
+
+// -----------------------------------------------------------------------------
+// SECURITY DOMAIN
+// -----------------------------------------------------------------------------
+
+model KeyBundle {
+  userId                String   @id @map("user_id") @db.Uuid
+  identityPublicKey     String   @map("identity_public_key") @db.Text
+  signedPreKey          String   @map("signed_pre_key") @db.Text
+  signedPreKeySignature String   @map("signed_pre_key_signature") @db.Text
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  oneTimePreKeys        OneTimePreKey[]
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("key_bundles")
+}
+
+model OneTimePreKey {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  publicKey String   @map("public_key") @db.Text
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  keyBundle KeyBundle @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("one_time_pre_keys")
 }
