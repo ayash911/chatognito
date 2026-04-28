@@ -1,0 +1,51 @@
+{
+  "name": "chatognito",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "backend/services/*",
+    "backend/packages/*"
+  ],
+  "scripts": {
+    "setup": "npm run ports:fix && docker info > /dev/null 2>&1 || (echo '❌ ERROR: Docker is not running. Please open Docker Desktop!' && exit 1) && npm run docker:up && npm install && npm run db:generate && npm run db:push",
+    "dev": "npm run dev --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "db:generate": "npm run generate --workspace=@chatognito/database",
+    "db:push": "npm run db:push --workspace=@chatognito/database",
+    "db:studio": "cd backend/packages/database && npx prisma studio",
+    "ports:fix": "lsof -ti:5434,6380,3001,5555 | xargs kill -9 || true",
+    "docker:up": "docker-compose -f backend/docker-compose.yml up -d",
+    "docker:down": "docker-compose -f backend/docker-compose.yml down",
+    "docker:reset": "docker-compose -f backend/docker-compose.yml down -v",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@typescript-eslint/eslint-plugin": "^8.59.1",
+    "@typescript-eslint/parser": "^8.59.1",
+    "concurrently": "^8.2.2",
+    "eslint": "^10.2.1",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.5.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.8.3",
+    "prisma": "^7.8.0",
+    "typescript": "^5.4.5",
+    "typescript-eslint": "^8.59.1"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.8.0"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml}": [
+      "prettier --write"
+    ]
+  }
+}

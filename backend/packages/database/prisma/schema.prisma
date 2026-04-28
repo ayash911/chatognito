@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                   String    @unique @db.VarChar(255)
+  passwordHash            String?   @map("password_hash") @db.VarChar(255)
+  username                String?   @unique @db.VarChar(50)
+  usernameLastChangedAt   DateTime? @map("username_last_changed_at") @db.Timestamptz
+  displayName             String?   @map("display_name") @db.VarChar(100)
+  bio                     String?   @db.Text
+  avatarUrl               String?   @map("avatar_url") @db.VarChar(1024)
+  bannerUrl               String?   @map("banner_url") @db.VarChar(1024)
+  isPrivate               Boolean   @default(false) @map("is_private")
+  twoFactorSecret         String?   @map("two_factor_secret") @db.VarChar(255)
+  twoFactorEnabled        Boolean   @default(false) @map("two_factor_enabled")
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt               DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt               DateTime? @map("deleted_at") @db.Timestamptz
+
+  oauthIdentities         OAuthIdentity[]
+  usernameHistory         UsernameHistory[]
+
+  @@map("users")
+  @@index([username])
+  @@index([email])
+}
+
+enum OAuthProvider {
+  google
+  apple
+
+  @@map("oauth_provider")
+}
+
+model OAuthIdentity {
+  id         String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String        @map("user_id") @db.Uuid
+  provider   OAuthProvider
+  providerId String        @map("provider_id") @db.VarChar(255)
+  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz
+
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@map("oauth_identities")
+}
+
+model UsernameHistory {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  oldUsername String   @map("old_username") @db.VarChar(50)
+  changedAt   DateTime @default(now()) @map("changed_at") @db.Timestamptz
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("username_history")
+  @@index([userId])
+}

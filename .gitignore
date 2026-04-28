@@ -1,0 +1,16 @@
+node_modules
+dist
+.npm
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+*.swp
+.docker
+/backend/packages/database/prisma/dev.db
+/backend/packages/database/prisma/dev.db-journal
+.husky/_
+*.tsbuildinfo
