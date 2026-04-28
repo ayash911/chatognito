@@ -32,7 +32,9 @@ export class UsernameService {
       // 2. Perform Transaction in PostgreSQL
       return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         // Fetch user with row-level lock
-        const user = await tx.$queryRaw<any[]>`
+        const user = await tx.$queryRaw<
+          { username: string | null; username_last_changed_at: Date | null }[]
+        >`
           SELECT username, username_last_changed_at 
           FROM users 
           WHERE id = ${userId}::uuid 

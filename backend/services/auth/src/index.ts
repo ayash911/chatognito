@@ -1,21 +1,31 @@
 import 'express-async-errors';
 import express, { Request, Response, NextFunction } from 'express';
+
 import cors from 'cors';
 import helmet from 'helmet';
 import jwt from 'jsonwebtoken';
 import { AuthService } from './services/auth.service';
 import { UsernameService } from './services/username.service';
+import { logger, httpLogger } from '@chatognito/logger';
 
 const app = express();
 
+app.use(httpLogger);
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretfallback';
 
+interface AuthRequest extends Request {
+  user?: {
+    userId: string;
+    email: string;
+  };
+}
+
 // Middleware for JWT verification
-const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+const requireAuth = (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'UNAUTHORIZED' });
@@ -23,8 +33,11 @@ const requireAuth = (req: Request, res: Response, next: NextFunction) => {
 
   const token = authHeader.split(' ')[1];
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    (req as any).user = decoded;
+    const decoded = jwt.verify(token, JWT_SECRET) as {
+      userId: string;
+      email: string;
+    };
+    req.user = decoded;
     next();
   } catch (_err) {
     return res.status(401).json({ error: 'INVALID_TOKEN' });
@@ -50,9 +63,9 @@ app.post('/api/v1/auth/login', async (req: Request, res: Response) => {
   res.status(200).json(result);
 });
 
-app.put('/api/v1/users/me/username', requireAuth, async (req: Request, res: Response) => {
+app.put('/api/v1/users/me/username', requireAuth, async (req: AuthRequest, res: Response) => {
   const { username } = req.body;
-  const userId = (req as any).user.userId;
+  const userId = req.user!.userId;
 
   if (!username) {
     return res.status(400).json({ error: 'USERNAME_REQUIRED' });
@@ -63,8 +76,22 @@ app.put('/api/v1/users/me/username', requireAuth, async (req: Request, res: Resp
 });
 
 // Global Error Handler
-app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
-  console.error(err);
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
+  const isExpectedError = [
+    'USERNAME_TAKEN',
+    'USERNAME_TAKEN_OR_PENDING',
+    'EMAIL_IN_USE',
+    'COOLDOWN_ACTIVE',
+    'INVALID_FORMAT',
+    'INVALID_CREDENTIALS',
+  ].some((msg) => err.message.includes(msg));
+
+  if (isExpectedError) {
+    logger.warn(`Expected Error: ${err.message} [${req.method} ${req.path}]`);
+  } else {
+    logger.error({ err, msg: 'Unhandled Error', path: req.path });
+  }
+
   if (
     err.message === 'USERNAME_TAKEN' ||
     err.message === 'USERNAME_TAKEN_OR_PENDING' ||
@@ -84,5 +111,5 @@ app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
-  console.log(`Auth Service listening on port ${PORT}`);
+  logger.info(`Auth Service listening on port ${PORT}`);
 });

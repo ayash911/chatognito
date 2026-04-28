@@ -1,0 +1,17 @@
+{
+  "name": "@chatognito/logger",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "pino": "^9.1.0",
+    "pino-http": "^10.1.0"
+  },
+  "devDependencies": {
+    "pino-pretty": "^11.1.0",
+    "typescript": "^5.4.5"
+  }
+}

@@ -63,7 +63,7 @@ describe('UsernameService', () => {
       const oldDate = new Date();
       oldDate.setDate(oldDate.getDate() - 95); // Changed 95 days ago
 
-      let updatedData: any;
+      let updatedData!: { data: { username: string } };
 
       (prisma.$transaction as jest.Mock).mockImplementationOnce(async (callback) => {
         const mockTx = {
