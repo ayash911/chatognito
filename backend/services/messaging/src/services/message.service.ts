@@ -96,9 +96,51 @@ export class MessageService {
   }
 
   /**
-   * Soft-deletes a message. Only the original sender can delete it.
+   * Soft-deletes a message. Only the original sender or a group admin can delete it.
    */
   static async delete(conversationId: string, messageId: string, requestingUserId: string) {
+    const message = await prisma.message.findUnique({
+      where: { id: messageId },
+      include: {
+        conversation: {
+          include: {
+            participants: {
+              where: { userId: requestingUserId },
+            },
+          },
+        },
+      },
+    });
+
+    if (!message || message.deletedAt || message.conversationId !== conversationId) {
+      throw new Error('MESSAGE_NOT_FOUND');
+    }
+
+    const requestingPart = message.conversation.participants[0];
+    const isSender = message.senderId === requestingUserId;
+    const isAdmin = requestingPart?.role === 'admin';
+
+    if (!isSender && !isAdmin) throw new Error('FORBIDDEN');
+
+    return prisma.message.update({
+      where: { id: messageId },
+      data: { deletedAt: new Date() },
+    });
+  }
+
+  /**
+   * Edits a message's content. Only the original sender can edit it.
+   */
+  static async edit(
+    conversationId: string,
+    messageId: string,
+    requestingUserId: string,
+    newContent: string,
+  ) {
+    const trimmed = newContent?.trim();
+    if (!trimmed) throw new Error('MESSAGE_EMPTY');
+    if (trimmed.length > 4000) throw new Error('MESSAGE_TOO_LONG');
+
     const message = await prisma.message.findUnique({ where: { id: messageId } });
     if (!message || message.deletedAt || message.conversationId !== conversationId) {
       throw new Error('MESSAGE_NOT_FOUND');
@@ -107,7 +149,7 @@ export class MessageService {
 
     return prisma.message.update({
       where: { id: messageId },
-      data: { deletedAt: new Date() },
+      data: { content: trimmed, updatedAt: new Date() },
     });
   }
 

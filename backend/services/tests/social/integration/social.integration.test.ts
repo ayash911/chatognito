@@ -135,4 +135,19 @@ describe('Social Integration Tests', () => {
 
     expect(sendRes.status).toBe(403); // Should fail because B is blocked by A
   });
+
+  it('should unblock a user and allow messaging again', async () => {
+    // A unblocks B
+    const unblockRes = await request(socialTarget)
+      .post(`/social/unblock/${userB.id}`)
+      .set('Authorization', `Bearer ${tokenA}`);
+    expect(unblockRes.status).toBe(200);
+
+    // Messaging should work now
+    const sendRes = await request(messagingTarget)
+      .post(`/messaging/conversations/direct`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ targetUserId: userB.id });
+    expect(sendRes.status).toBe(200);
+  });
 });

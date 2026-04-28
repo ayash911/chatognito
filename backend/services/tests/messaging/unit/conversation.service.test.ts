@@ -206,4 +206,76 @@ describe('ConversationService Unit Tests', () => {
       expect(result.userId).toBe('u2');
     });
   });
+
+  describe('removeParticipant', () => {
+    it('should throw FORBIDDEN if non-admin tries to remove someone else', async () => {
+      ((prisma as any).conversation.findUnique as jest.Mock).mockResolvedValue({
+        type: 'group',
+        participants: [
+          { userId: 'u1', role: 'member' },
+          { userId: 'u2', role: 'member' },
+        ],
+      });
+      await expect(ConversationService.removeParticipant('c1', 'u1', 'u2')).rejects.toThrow(
+        'FORBIDDEN',
+      );
+    });
+
+    it('should allow a member to remove themselves (leave)', async () => {
+      ((prisma as any).conversation.findUnique as jest.Mock).mockResolvedValue({
+        type: 'group',
+        participants: [
+          { userId: 'u1', role: 'member' },
+          { userId: 'u2', role: 'member' },
+        ],
+      });
+      ((prisma as any).conversationParticipant.delete as jest.Mock).mockResolvedValue({});
+      await ConversationService.removeParticipant('c1', 'u1', 'u1');
+      expect(prisma.conversationParticipant.delete).toHaveBeenCalled();
+    });
+
+    it('should allow an admin to remove anyone', async () => {
+      ((prisma as any).conversation.findUnique as jest.Mock).mockResolvedValue({
+        type: 'group',
+        participants: [
+          { userId: 'admin-id', role: 'admin' },
+          { userId: 'u2', role: 'member' },
+        ],
+      });
+      ((prisma as any).conversationParticipant.delete as jest.Mock).mockResolvedValue({});
+      await ConversationService.removeParticipant('c1', 'admin-id', 'u2');
+      expect(prisma.conversationParticipant.delete).toHaveBeenCalled();
+    });
+  });
+
+  describe('setParticipantRole', () => {
+    it('should promote a member to admin', async () => {
+      ((prisma as any).conversation.findUnique as jest.Mock).mockResolvedValue({
+        type: 'group',
+        participants: [
+          { userId: 'admin-id', role: 'admin' },
+          { userId: 'u2', role: 'member' },
+        ],
+      });
+      ((prisma as any).conversationParticipant.update as jest.Mock).mockResolvedValue({});
+      await ConversationService.setParticipantRole('c1', 'admin-id', 'u2', 'admin');
+      expect(prisma.conversationParticipant.update).toHaveBeenCalledWith({
+        where: expect.any(Object),
+        data: { role: 'admin' },
+      });
+    });
+
+    it('should throw CANNOT_DEMOTE_LAST_ADMIN', async () => {
+      ((prisma as any).conversation.findUnique as jest.Mock).mockResolvedValue({
+        type: 'group',
+        participants: [
+          { userId: 'u1', role: 'admin' },
+          { userId: 'u2', role: 'member' },
+        ],
+      });
+      await expect(
+        ConversationService.setParticipantRole('c1', 'u1', 'u1', 'member'),
+      ).rejects.toThrow('CANNOT_DEMOTE_LAST_ADMIN');
+    });
+  });
 });

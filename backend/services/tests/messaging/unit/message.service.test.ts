@@ -135,6 +135,7 @@ describe('MessageService Unit Tests', () => {
         senderId: 'u2',
         conversationId: 'c1',
         deletedAt: null,
+        conversation: { participants: [{ userId: 'u1', role: 'member' }] },
       });
       await expect(MessageService.delete('c1', 'm1', 'u1')).rejects.toThrow('FORBIDDEN');
     });
@@ -145,9 +146,23 @@ describe('MessageService Unit Tests', () => {
         senderId: 'u1',
         conversationId: 'c1',
         deletedAt: null,
+        conversation: { participants: [{ userId: 'u1', role: 'member' }] },
       });
       ((prisma as any).message.update as jest.Mock).mockResolvedValue({ id: 'm1' });
       const result = await MessageService.delete('c1', 'm1', 'u1');
+      expect(result.id).toBe('m1');
+    });
+
+    it('should allow admin to delete any message in group', async () => {
+      ((prisma as any).message.findUnique as jest.Mock).mockResolvedValue({
+        id: 'm1',
+        senderId: 'u2', // Different sender
+        conversationId: 'c1',
+        deletedAt: null,
+        conversation: { participants: [{ userId: 'admin-id', role: 'admin' }] },
+      });
+      ((prisma as any).message.update as jest.Mock).mockResolvedValue({ id: 'm1' });
+      const result = await MessageService.delete('c1', 'm1', 'admin-id');
       expect(result.id).toBe('m1');
     });
   });

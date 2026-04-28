@@ -75,6 +75,58 @@ describe('SocialService Unit Tests', () => {
     });
   });
 
+  describe('unfollowUser', () => {
+    it('should throw NOT_FOLLOWING if follow does not exist', async () => {
+      (prisma.follow.findUnique as jest.Mock).mockResolvedValue(null);
+      await expect(SocialService.unfollowUser('u1', 'u2')).rejects.toThrow('NOT_FOLLOWING');
+    });
+
+    it('should delete follow if exists', async () => {
+      (prisma.follow.findUnique as jest.Mock).mockResolvedValue({ id: 'f1' });
+      await SocialService.unfollowUser('u1', 'u2');
+      expect(prisma.follow.delete).toHaveBeenCalledWith({ where: { id: 'f1' } });
+    });
+  });
+
+  describe('unblockUser', () => {
+    it('should throw NOT_BLOCKED if block does not exist', async () => {
+      (prisma.block.findUnique as jest.Mock).mockResolvedValue(null);
+      await expect(SocialService.unblockUser('u1', 'u2')).rejects.toThrow('NOT_BLOCKED');
+    });
+
+    it('should delete block if exists', async () => {
+      (prisma.block.findUnique as jest.Mock).mockResolvedValue({ id: 'b1' });
+      await SocialService.unblockUser('u1', 'u2');
+      expect(prisma.block.delete).toHaveBeenCalledWith({ where: { id: 'b1' } });
+    });
+  });
+
+  describe('getFollowers', () => {
+    it('should return a list of followers', async () => {
+      const followers = [{ id: 'f1', follower: { username: 'user1' } }];
+      (prisma.follow.findMany as jest.Mock).mockResolvedValue(followers);
+      const result = await SocialService.getFollowers('u1');
+      expect(result).toEqual(followers);
+      expect(prisma.follow.findMany).toHaveBeenCalledWith({
+        where: { followingId: 'u1' },
+        include: expect.any(Object),
+      });
+    });
+  });
+
+  describe('getFollowing', () => {
+    it('should return a list of followed users', async () => {
+      const following = [{ id: 'f1', following: { username: 'user2' } }];
+      (prisma.follow.findMany as jest.Mock).mockResolvedValue(following);
+      const result = await SocialService.getFollowing('u1');
+      expect(result).toEqual(following);
+      expect(prisma.follow.findMany).toHaveBeenCalledWith({
+        where: { followerId: 'u1' },
+        include: expect.any(Object),
+      });
+    });
+  });
+
   describe('getRelationshipStatus', () => {
     it('should identify friends (mutual follow)', async () => {
       (prisma.follow.findUnique as jest.Mock)

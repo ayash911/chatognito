@@ -75,6 +75,21 @@ conversationRouter.delete(
   },
 );
 
+// Edit a message
+conversationRouter.patch(
+  '/:conversationId/messages/:messageId',
+  async (req: AuthRequest, res: Response) => {
+    const { content } = z.object({ content: z.string().min(1) }).parse(req.body);
+    const message = await MessageService.edit(
+      req.params.conversationId,
+      req.params.messageId,
+      req.user!.userId,
+      content,
+    );
+    res.json(message);
+  },
+);
+
 // Mark conversation as read
 conversationRouter.post('/:conversationId/read', async (req: AuthRequest, res: Response) => {
   await MessageService.markRead(req.params.conversationId, req.user!.userId);
