@@ -49,12 +49,34 @@ jobs:
       - name: Generate Database Client
         run: npm run db:generate
 
+      - name: Push Database Schema
+        run: npm run db:push
+        env:
+          DATABASE_URL: postgresql://chatognito:password@localhost:5434/chatognito_auth?schema=public
+
+      - name: Build Packages
+        run: npm run build --workspaces --if-present
+
       - name: Run Linter
         run: npm run lint
+
+      - name: Start Auth Service
+        run: |
+          cd backend/services/auth
+          nohup npx ts-node src/index.ts > auth.log 2>&1 &
+          npx wait-on http://localhost:8080/api/v1/auth/login --timeout 30000
+        env:
+          DATABASE_URL: postgresql://chatognito:password@localhost:5434/chatognito_auth?schema=public
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          JWT_SECRET: test_secret
+          PORT: 8080
 
       - name: Run Tests
         run: npm run test
         env:
           DATABASE_URL: postgresql://chatognito:password@localhost:5434/chatognito_auth?schema=public
-          REDIS_URL: redis://localhost:6379
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
           JWT_SECRET: test_secret
+          API_URL: http://localhost:8080
