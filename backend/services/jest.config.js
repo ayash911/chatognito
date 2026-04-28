@@ -10,5 +10,6 @@ module.exports = {
   moduleNameMapper: {
     '^@auth/(.*)$': '<rootDir>/auth/src/$1',
     '^@common/(.*)$': '<rootDir>/common/src/$1',
+    '^@messaging/(.*)$': '<rootDir>/messaging/src/$1',
   },
 };

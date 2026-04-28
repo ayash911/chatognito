@@ -76,4 +76,26 @@ export class ProfileService {
 
     return user;
   }
+
+  /**
+   * Search for users by username or display name
+   */
+  static async search(query: string, limit = 10) {
+    return await prisma.user.findMany({
+      where: {
+        deletedAt: null,
+        OR: [
+          { username: { contains: query, mode: 'insensitive' } },
+          { displayName: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        avatarUrl: true,
+      },
+      take: limit,
+    });
+  }
 }

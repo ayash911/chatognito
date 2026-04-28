@@ -19,14 +19,11 @@ describe('Auth Integration Tests (Live Server)', () => {
   });
 
   afterAll(async () => {
-    // Cleanup test user and history
-    if (userId) {
-      await prisma.usernameHistory.deleteMany({ where: { userId } });
-      await prisma.user.deleteMany({ where: { id: userId } });
-    }
+    // Cleanup all test users
+    await prisma.user.deleteMany({
+      where: { email: { contains: '@example.com' } },
+    });
     await prisma.$disconnect();
-    // We don't want to close redis completely if other tests share it,
-    // but quit() is fine for the end of the suite.
     await redis.quit();
   });
 

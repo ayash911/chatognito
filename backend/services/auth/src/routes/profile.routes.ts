@@ -64,7 +64,20 @@ profileRouter.post('/me/2fa/enable', requireAuth, async (req: AuthRequest, res: 
   res.json({ success: true, secret });
 });
 
-// Get public profile (Must be last to avoid catching /me)
+// Search users
+profileRouter.get('/search', requireAuth, async (req: AuthRequest, res: Response) => {
+  const query = req.query.q as string;
+  const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+
+  if (!query) {
+    return res.status(400).json({ error: 'QUERY_REQUIRED' });
+  }
+
+  const users = await ProfileService.search(query, limit);
+  res.json(users);
+});
+
+// Get public profile (Must be last to avoid catching /me or /search)
 profileRouter.get('/:username', async (req: Request, res: Response) => {
   const profile = await ProfileService.getPublicProfile(req.params.username);
   res.json(profile);

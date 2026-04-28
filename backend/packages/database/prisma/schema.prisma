@@ -26,6 +26,8 @@ model User {
 
   oauthIdentities         OAuthIdentity[]
   usernameHistory         UsernameHistory[]
+  conversations           ConversationParticipant[]
+  messagesSent            Message[]
 
   @@map("users")
   @@index([username])
@@ -62,4 +64,68 @@ model UsernameHistory {
 
   @@map("username_history")
   @@index([userId])
+}
+
+// -----------------------------------------------------------------------------
+// MESSAGING DOMAIN
+// -----------------------------------------------------------------------------
+
+enum ConversationType {
+  direct
+  group
+
+  @@map("conversation_type")
+}
+
+model Conversation {
+  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type      ConversationType @default(direct)
+  title     String?          @db.VarChar(100) // Only for group chats
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@map("conversations")
+}
+
+enum ParticipantRole {
+  member
+  admin
+
+  @@map("participant_role")
+}
+
+model ConversationParticipant {
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversationId String          @map("conversation_id") @db.Uuid
+  userId         String          @map("user_id") @db.Uuid
+  role           ParticipantRole @default(member)
+  joinedAt       DateTime        @default(now()) @map("joined_at") @db.Timestamptz
+  lastReadAt     DateTime?       @map("last_read_at") @db.Timestamptz
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@map("conversation_participants")
+  @@index([userId])
+}
+
+model Message {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversationId String    @map("conversation_id") @db.Uuid
+  senderId       String    @map("sender_id") @db.Uuid
+  content        String    @db.Text
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+  @@index([conversationId, createdAt])
+  @@index([senderId])
 }

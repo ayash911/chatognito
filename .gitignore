@@ -14,3 +14,4 @@ Thumbs.db
 /backend/packages/database/prisma/dev.db-journal
 .husky/_
 *.tsbuildinfo
+implementation_plan.md

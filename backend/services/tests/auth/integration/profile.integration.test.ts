@@ -9,7 +9,6 @@ describe('Profile Integration Tests', () => {
   const testEmail = `profile-${Date.now()}@example.com`;
   const testPassword = 'password123';
   let token: string;
-  let userId: string;
   let username: string;
 
   beforeAll(async () => {
@@ -24,7 +23,6 @@ describe('Profile Integration Tests', () => {
       .send({ email: testEmail, password: testPassword });
 
     token = loginRes.body.token;
-    userId = loginRes.body.user.id;
     username = `tester_${Date.now()}`;
 
     // Set username so we can test public profile
@@ -35,11 +33,10 @@ describe('Profile Integration Tests', () => {
   });
 
   afterAll(async () => {
-    // Cleanup
-    if (userId) {
-      await prisma.usernameHistory.deleteMany({ where: { userId } });
-      await prisma.user.deleteMany({ where: { id: userId } });
-    }
+    // Cleanup all test users
+    await prisma.user.deleteMany({
+      where: { email: { contains: '@example.com' } },
+    });
     await prisma.$disconnect();
     await redis.quit();
   });

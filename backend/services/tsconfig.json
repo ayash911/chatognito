@@ -14,7 +14,8 @@
     "baseUrl": ".",
     "paths": {
       "@auth/*": ["auth/src/*"],
-      "@common/*": ["common/src/*"]
+      "@common/*": ["common/src/*"],
+      "@messaging/*": ["messaging/src/*"]
     }
   },
   "include": ["*/src/**/*.ts", "tests/**/*.ts"],
