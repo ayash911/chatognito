@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../db/prisma';
+import { User } from '@chatognito/database';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretfallback'; // In production, this must be set
 
@@ -46,5 +47,25 @@ export class AuthService {
     );
 
     return { token, user: { id: user.id, email: user.email, username: user.username } };
+  }
+
+  /**
+   * Helper for OAuth logins where password check is skipped
+   */
+  static async loginWithoutPassword(user: User) {
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, hasUsername: !!user.username },
+      JWT_SECRET,
+      { expiresIn: '7d' },
+    );
+
+    return {
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+      },
+    };
   }
 }

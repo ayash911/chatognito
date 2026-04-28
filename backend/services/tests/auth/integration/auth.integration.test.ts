@@ -1,9 +1,11 @@
 import request from 'supertest';
-import { prisma } from '../../src/db/prisma';
-import { redis } from '../../src/db/redis';
+import { prisma } from '@auth/db/prisma';
+import { redis } from '@auth/db/redis';
 
-// We hit the live running server
-const API_URL = process.env.API_URL || 'http://localhost:8080';
+import { app } from '@auth/index';
+
+// We hit the live running server if API_URL is provided, otherwise we use the Express app (ghost server)
+const requestTarget = process.env.API_URL || app;
 
 describe('Auth Integration Tests (Live Server)', () => {
   const testEmail = `test-${Date.now()}@example.com`;
@@ -29,7 +31,7 @@ describe('Auth Integration Tests (Live Server)', () => {
   });
 
   it('should sign up a new user', async () => {
-    const res = await request(API_URL)
+    const res = await request(requestTarget)
       .post('/api/v1/auth/signup')
       .send({ email: testEmail, password: testPassword });
 
@@ -39,7 +41,7 @@ describe('Auth Integration Tests (Live Server)', () => {
   });
 
   it('should login and get a token', async () => {
-    const res = await request(API_URL)
+    const res = await request(requestTarget)
       .post('/api/v1/auth/login')
       .send({ email: testEmail, password: testPassword });
 
@@ -50,7 +52,7 @@ describe('Auth Integration Tests (Live Server)', () => {
 
   it('should set a username and verify the history table works', async () => {
     // 1. Set first username
-    const res1 = await request(API_URL)
+    const res1 = await request(requestTarget)
       .put('/api/v1/users/me/username')
       .set('Authorization', `Bearer ${token}`)
       .send({ username: 'integration_tester_1' });
@@ -66,7 +68,7 @@ describe('Auth Integration Tests (Live Server)', () => {
     });
 
     // 3. Set second username
-    const res2 = await request(API_URL)
+    const res2 = await request(requestTarget)
       .put('/api/v1/users/me/username')
       .set('Authorization', `Bearer ${token}`)
       .send({ username: 'integration_tester_2' });
