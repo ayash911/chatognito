@@ -1,6 +1,6 @@
 import request from 'supertest';
-import { prisma } from '../src/db/prisma';
-import { redis } from '../src/db/redis';
+import { prisma } from '../../src/db/prisma';
+import { redis } from '../../src/db/redis';
 
 // We hit the live running server
 const API_URL = process.env.API_URL || 'http://localhost:8080';
@@ -18,10 +18,10 @@ describe('Auth Integration Tests (Live Server)', () => {
 
   afterAll(async () => {
     // Cleanup test user and history
-    // if (userId) {
-    //   await prisma.usernameHistory.deleteMany({ where: { userId } });
-    //   await prisma.user.deleteMany({ where: { id: userId } });
-    // }
+    if (userId) {
+      await prisma.usernameHistory.deleteMany({ where: { userId } });
+      await prisma.user.deleteMany({ where: { id: userId } });
+    }
     await prisma.$disconnect();
     // We don't want to close redis completely if other tests share it,
     // but quit() is fine for the end of the suite.
@@ -77,8 +77,6 @@ describe('Auth Integration Tests (Live Server)', () => {
     const history = await prisma.usernameHistory.findMany({
       where: { userId },
     });
-
-    console.log(`Found ${history.length} history records for user ${userId}`);
 
     expect(history.length).toBe(1);
     expect(history[0].oldUsername).toBe('integration_tester_1');

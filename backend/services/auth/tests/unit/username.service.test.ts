@@ -1,15 +1,15 @@
-import { UsernameService } from '../src/services/username.service';
-import { redis } from '../src/db/redis';
-import { prisma } from '../src/db/prisma';
+import { UsernameService } from '../../src/services/username.service';
+import { redis } from '../../src/db/redis';
+import { prisma } from '../../src/db/prisma';
 
-jest.mock('../src/db/redis', () => ({
+jest.mock('../../src/db/redis', () => ({
   redis: {
     set: jest.fn(),
     del: jest.fn(),
   },
 }));
 
-jest.mock('../src/db/prisma', () => ({
+jest.mock('../../src/db/prisma', () => ({
   prisma: {
     $transaction: jest.fn(),
     user: {

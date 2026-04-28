@@ -10,6 +10,7 @@
     "setup": "npm run ports:fix && docker info > /dev/null 2>&1 || (echo ' ERROR: Docker is not running. Please open Docker Desktop!' && exit 1) && npm run docker:up && npm install && npm run db:generate && npm run db:push",
     "dev": "npm run dev --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
+    "test:unit": "npm run test:unit --workspaces --if-present",
     "db:generate": "npm run generate --workspace=@chatognito/database",
     "db:push": "npm run db:push --workspace=@chatognito/database",
     "db:seed": "npx ts-node scripts/seed.ts",
