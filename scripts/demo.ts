@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import { io, type Socket } from 'socket.io-client';
 import dotenv from 'dotenv';
 

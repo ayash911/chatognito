@@ -1,6 +1,6 @@
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import { promisify } from 'util';
-import type { DHKeyPair, EncryptionResult, SigningKeyPair } from './types.js';
+import type { DHKeyPair, EncryptionResult, SigningKeyPair } from './types';
 
 const generateKeyPair = promisify(crypto.generateKeyPair);
 

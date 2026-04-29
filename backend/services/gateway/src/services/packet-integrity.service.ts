@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import { CryptoPrimitives } from '@chatognito/crypto';
 import type { SignedSocketPacket } from '../types';
 

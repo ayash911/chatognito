@@ -1,5 +1,5 @@
-import { CryptoPrimitives, DoubleRatchet, X3DH } from '../src/index.js';
-import type { RatchetState } from '../src/index.js';
+import { CryptoPrimitives, DoubleRatchet, X3DH } from '../src/index';
+import type { RatchetState } from '../src/index';
 
 describe('E2EE End-to-End Flow', () => {
   it('should successfully establish a session and exchange messages between Alice and Bob', async () => {
