@@ -1,5 +1,5 @@
-import { CryptoPrimitives } from './primitives.js';
-import type { DHKeyPair } from './types.js';
+import { CryptoPrimitives } from './primitives';
+import type { DHKeyPair } from './types';
 
 export class X3DH {
   /**

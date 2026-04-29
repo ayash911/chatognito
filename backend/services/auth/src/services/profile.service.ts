@@ -1,4 +1,5 @@
 import { prisma } from '@common/db/prisma';
+import { logger } from '@chatognito/logger';
 
 export class ProfileService {
   /**
@@ -14,7 +15,8 @@ export class ProfileService {
       isPrivate?: boolean;
     },
   ) {
-    return await prisma.user.update({
+    logger.info({ userId }, 'Updating user profile');
+    const user = await prisma.user.update({
       where: { id: userId },
       data: {
         ...data,
@@ -32,23 +34,45 @@ export class ProfileService {
         createdAt: true,
       },
     });
+    logger.info({ userId }, 'User profile updated successfully');
+    return user;
   }
 
-  /**
-   * Deactivate user account (Soft Delete)
-   */
   static async deactivateAccount(userId: string) {
-    return await prisma.user.update({
+    return await prisma.user.delete({
       where: { id: userId },
-      data: {
-        deletedAt: new Date(),
-      },
     });
   }
 
-  /**
-   * Get public profile by username
-   */
+  static async getProfile(identifier: string) {
+    logger.info({ identifier }, 'Fetching user profile');
+    const user = await prisma.user.findUnique({
+      where: { username: identifier },
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        bio: true,
+        avatarUrl: true,
+        bannerUrl: true,
+        isPrivate: true,
+        createdAt: true,
+      },
+    });
+
+    if (!user) throw new Error('USER_NOT_FOUND');
+    if (user.isPrivate) {
+      return {
+        username: user.username,
+        displayName: user.displayName,
+        avatarUrl: user.avatarUrl,
+        isPrivate: true,
+      };
+    }
+
+    return user;
+  }
+
   static async getPublicProfile(username: string) {
     const user = await prisma.user.findUnique({
       where: { username },
@@ -81,6 +105,7 @@ export class ProfileService {
    * Search for users by username or display name
    */
   static async search(query: string, limit = 10) {
+    logger.info({ query }, 'Searching for users');
     return await prisma.user.findMany({
       where: {
         deletedAt: null,

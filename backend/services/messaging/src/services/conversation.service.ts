@@ -1,4 +1,5 @@
 import { prisma } from '@common/db/prisma';
+import { logger } from '@chatognito/logger';
 
 export class ConversationService {
   /**
@@ -6,7 +7,9 @@ export class ConversationService {
    * If one already exists, returns the existing one instead of creating a duplicate.
    */
   static async getOrCreateDirect(userAId: string, userBId: string) {
+    logger.info({ userAId, userBId }, 'getOrCreateDirect conversation');
     if (userAId === userBId) {
+      logger.warn({ userAId }, 'Attempted to message self');
       throw new Error('CANNOT_MESSAGE_SELF');
     }
 
@@ -48,7 +51,7 @@ export class ConversationService {
 
     if (existing) return existing;
 
-    return prisma.conversation.create({
+    const created = await prisma.conversation.create({
       data: {
         type: 'direct',
         participants: {
@@ -59,6 +62,12 @@ export class ConversationService {
       },
       include: { participants: true },
     });
+
+    logger.info(
+      { conversationId: created.id, userAId, userBId },
+      'Created new direct conversation',
+    );
+    return created;
   }
 
   /**
@@ -85,7 +94,11 @@ export class ConversationService {
       throw new Error('USER_NOT_FOUND');
     }
 
-    return prisma.conversation.create({
+    logger.info(
+      { creatorId, title, memberCount: allMemberIds.length },
+      'Creating group conversation',
+    );
+    const group = await prisma.conversation.create({
       data: {
         type: 'group',
         title: title.trim(),
@@ -100,6 +113,9 @@ export class ConversationService {
       },
       include: { participants: true },
     });
+
+    logger.info({ conversationId: group.id, creatorId }, 'Group conversation created successfully');
+    return group;
   }
 
   /**

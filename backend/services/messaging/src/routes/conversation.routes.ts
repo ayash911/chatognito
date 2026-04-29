@@ -61,8 +61,20 @@ conversationRouter.get('/:conversationId/messages', async (req: AuthRequest, res
 
 // Send a message to a conversation
 conversationRouter.post('/:conversationId/messages', async (req: AuthRequest, res: Response) => {
-  const { content } = z.object({ content: z.string().min(1) }).parse(req.body);
-  const message = await MessageService.send(req.params.conversationId, req.user!.userId, content);
+  const { content, isEncrypted, encryptionHeader } = z
+    .object({
+      content: z.string().min(1),
+      isEncrypted: z.boolean().optional(),
+      encryptionHeader: z.string().optional(),
+    })
+    .parse(req.body);
+  const message = await MessageService.send(
+    req.params.conversationId,
+    req.user!.userId,
+    content,
+    isEncrypted,
+    encryptionHeader,
+  );
   res.status(201).json(message);
 });
 
@@ -70,7 +82,12 @@ conversationRouter.post('/:conversationId/messages', async (req: AuthRequest, re
 conversationRouter.delete(
   '/:conversationId/messages/:messageId',
   async (req: AuthRequest, res: Response) => {
-    await MessageService.delete(req.params.conversationId, req.params.messageId, req.user!.userId);
+    await MessageService.delete(
+      req.params.conversationId,
+      req.params.messageId,
+      req.user!.userId,
+      req.user!.role,
+    );
     res.json({ success: true });
   },
 );
@@ -85,6 +102,7 @@ conversationRouter.patch(
       req.params.messageId,
       req.user!.userId,
       content,
+      req.user!.role,
     );
     res.json(message);
   },

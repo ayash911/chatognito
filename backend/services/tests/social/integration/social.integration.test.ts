@@ -6,9 +6,9 @@ import { app as authApp } from '@auth/index';
 import { app as socialApp } from '@social/index';
 import { app as messagingApp } from '@messaging/index';
 
-const authTarget = authApp;
-const socialTarget = socialApp;
-const messagingTarget = messagingApp;
+const authTarget = process.env.AUTH_URL || authApp;
+const socialTarget = process.env.SOCIAL_URL || socialApp;
+const messagingTarget = process.env.MESSAGING_URL || messagingApp;
 
 describe('Social Integration Tests', () => {
   let userA: any, userB: any;

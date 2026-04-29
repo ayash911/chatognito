@@ -1,5 +1,5 @@
-import { CryptoPrimitives } from './primitives.js';
-import type { EncryptionResult, RatchetHeader, RatchetState } from './types.js';
+import { CryptoPrimitives } from './primitives';
+import type { EncryptionResult, RatchetHeader, RatchetState } from './types';
 
 export class DoubleRatchet {
   private static readonly MAX_SKIP = 1000;

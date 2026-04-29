@@ -1,11 +1,19 @@
 import { prisma } from '@common/db/prisma';
+import { logger } from '@chatognito/logger';
 
 export class MessageService {
   /**
    * Sends a message to a conversation.
    * Verifies the sender is a participant before allowing it.
    */
-  static async send(conversationId: string, senderId: string, content: string) {
+  static async send(
+    conversationId: string,
+    senderId: string,
+    content: string,
+    isEncrypted: boolean = false,
+    encryptionHeader: string | null = null,
+  ) {
+    logger.info({ conversationId, senderId, isEncrypted }, 'Attempting to send message');
     const trimmed = content?.trim();
     if (!trimmed) throw new Error('MESSAGE_EMPTY');
     if (trimmed.length > 4000) throw new Error('MESSAGE_TOO_LONG');
@@ -44,7 +52,7 @@ export class MessageService {
     // Create message and bump the conversation's updatedAt atomically
     const [message] = await prisma.$transaction([
       prisma.message.create({
-        data: { conversationId, senderId, content: trimmed },
+        data: { conversationId, senderId, content: trimmed, isEncrypted, encryptionHeader },
         include: {
           sender: {
             select: { id: true, username: true, displayName: true, avatarUrl: true },
@@ -57,6 +65,7 @@ export class MessageService {
       }),
     ]);
 
+    logger.info({ messageId: message.id, conversationId }, 'Message sent successfully');
     return message;
   }
 
@@ -98,7 +107,13 @@ export class MessageService {
   /**
    * Soft-deletes a message. Only the original sender or a group admin can delete it.
    */
-  static async delete(conversationId: string, messageId: string, requestingUserId: string) {
+  static async delete(
+    conversationId: string,
+    messageId: string,
+    requestingUserId: string,
+    requestingUserRole: string = 'user',
+  ) {
+    logger.info({ conversationId, messageId, requestingUserId }, 'Attempting to delete message');
     const message = await prisma.message.findUnique({
       where: { id: messageId },
       include: {
@@ -120,12 +135,16 @@ export class MessageService {
     const isSender = message.senderId === requestingUserId;
     const isAdmin = requestingPart?.role === 'admin';
 
-    if (!isSender && !isAdmin) throw new Error('FORBIDDEN');
+    const isGlobalModerator = requestingUserRole === 'admin' || requestingUserRole === 'moderator';
 
-    return prisma.message.update({
+    if (!isSender && !isAdmin && !isGlobalModerator) throw new Error('FORBIDDEN');
+
+    const deleted = await prisma.message.update({
       where: { id: messageId },
       data: { deletedAt: new Date() },
     });
+    logger.info({ messageId, conversationId }, 'Message soft-deleted successfully');
+    return deleted;
   }
 
   /**
@@ -136,7 +155,9 @@ export class MessageService {
     messageId: string,
     requestingUserId: string,
     newContent: string,
+    requestingUserRole: string = 'user',
   ) {
+    logger.info({ conversationId, messageId, requestingUserId }, 'Attempting to edit message');
     const trimmed = newContent?.trim();
     if (!trimmed) throw new Error('MESSAGE_EMPTY');
     if (trimmed.length > 4000) throw new Error('MESSAGE_TOO_LONG');
@@ -145,18 +166,22 @@ export class MessageService {
     if (!message || message.deletedAt || message.conversationId !== conversationId) {
       throw new Error('MESSAGE_NOT_FOUND');
     }
-    if (message.senderId !== requestingUserId) throw new Error('FORBIDDEN');
+    const isGlobalModerator = requestingUserRole === 'admin' || requestingUserRole === 'moderator';
+    if (message.senderId !== requestingUserId && !isGlobalModerator) throw new Error('FORBIDDEN');
 
-    return prisma.message.update({
+    const edited = await prisma.message.update({
       where: { id: messageId },
       data: { content: trimmed, updatedAt: new Date() },
     });
+    logger.info({ messageId, conversationId }, 'Message edited successfully');
+    return edited;
   }
 
   /**
    * Marks the conversation as read up to "now" for the requesting user.
    */
   static async markRead(conversationId: string, userId: string) {
+    logger.info({ conversationId, userId }, 'Marking conversation as read');
     const participant = await prisma.conversationParticipant.findUnique({
       where: { conversationId_userId: { conversationId, userId } },
     });

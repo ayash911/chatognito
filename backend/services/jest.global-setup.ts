@@ -21,13 +21,29 @@ const checkPort = (port: number): Promise<boolean> => {
 };
 
 export default async function globalSetup() {
-  const isLive = await checkPort(8080);
-  if (isLive) {
-    console.log(
-      '\nLive server detected on port 8080. Running integration tests against live instance...',
-    );
-    process.env.API_URL = 'http://localhost:8080';
+  const [authLive, messagingLive, socialLive] = await Promise.all([
+    checkPort(8080),
+    checkPort(8081),
+    checkPort(8082),
+  ]);
+
+  if (authLive || messagingLive || socialLive) {
+    console.log('\nLive servers detected:');
+    if (authLive) {
+      console.log(' - Auth Service (8080)');
+      process.env.AUTH_URL = 'http://localhost:8080';
+      process.env.API_URL = 'http://localhost:8080'; // For backward compatibility
+    }
+    if (messagingLive) {
+      console.log(' - Messaging Service (8081)');
+      process.env.MESSAGING_URL = 'http://localhost:8081';
+    }
+    if (socialLive) {
+      console.log(' - Social Service (8082)');
+      process.env.SOCIAL_URL = 'http://localhost:8082';
+    }
+    console.log('Integration tests will run against live instances.\n');
   } else {
-    console.log('\nNo live server detected');
+    console.log('\nNo live servers detected. Using internal app instances.\n');
   }
 }

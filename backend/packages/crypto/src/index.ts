@@ -1,4 +1,4 @@
-export { CryptoPrimitives } from './primitives.js';
-export { DoubleRatchet } from './ratchet.js';
-export { X3DH } from './x3dh.js';
-export type * from './types.js';
+export { CryptoPrimitives } from './primitives';
+export { DoubleRatchet } from './ratchet';
+export { X3DH } from './x3dh';
+export type * from './types';

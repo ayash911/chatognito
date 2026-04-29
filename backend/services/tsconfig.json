@@ -16,7 +16,8 @@
       "@auth/*": ["auth/src/*"],
       "@common/*": ["common/src/*"],
       "@messaging/*": ["messaging/src/*"],
-      "@social/*": ["social/src/*"]
+      "@social/*": ["social/src/*"],
+      "@chatognito/crypto": ["../packages/crypto/src/index.ts"]
     }
   },
   "include": ["*/src/**/*.ts", "tests/**/*.ts"],

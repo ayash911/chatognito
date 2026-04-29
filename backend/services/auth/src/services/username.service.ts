@@ -1,6 +1,7 @@
 import { redis } from '@common/db/redis';
 import { prisma } from '@common/db/prisma';
 import { Prisma } from '@chatognito/database';
+import { logger } from '@chatognito/logger';
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/;
 const COOLDOWN_DAYS = 90;
@@ -21,6 +22,7 @@ export class UsernameService {
    */
   static async setUsername(userId: string, desiredUsername: string): Promise<Date> {
     const username = desiredUsername.toLowerCase().trim();
+    logger.info({ userId, username }, 'Attempting to set username');
 
     if (!USERNAME_REGEX.test(username)) {
       throw new Error(
@@ -38,6 +40,10 @@ export class UsernameService {
     const lockAcquired = await redis.set(lockKey, 'locked', 'PX', 5000, 'NX');
 
     if (!lockAcquired) {
+      logger.warn(
+        { userId, username },
+        'Username set failed: Lock already held (taken or pending)',
+      );
       throw new Error('USERNAME_TAKEN_OR_PENDING');
     }
 
@@ -100,6 +106,7 @@ export class UsernameService {
           },
         });
 
+        logger.info({ userId, username }, 'Username set successfully');
         // Calculate next change date
         const nextChangeDate = new Date(now);
         nextChangeDate.setDate(nextChangeDate.getDate() + COOLDOWN_DAYS);

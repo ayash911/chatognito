@@ -1,15 +1,20 @@
 import { prisma } from '@common/db/prisma';
+import { logger } from '@chatognito/logger';
 
 export class SocialService {
   /**
    * Follow a user
    */
   static async followUser(followerId: string, followingId: string) {
+    logger.info({ followerId, followingId }, 'Attempting to follow user');
     if (followerId === followingId) throw new Error('CANNOT_FOLLOW_SELF');
 
     // Check if target user exists
     const target = await prisma.user.findUnique({ where: { id: followingId, deletedAt: null } });
-    if (!target) throw new Error('USER_NOT_FOUND');
+    if (!target) {
+      logger.warn({ followingId }, 'Follow failed: Target user not found');
+      throw new Error('USER_NOT_FOUND');
+    }
 
     // Check if already following
     const existing = await prisma.follow.findUnique({
@@ -17,7 +22,10 @@ export class SocialService {
         followerId_followingId: { followerId, followingId },
       },
     });
-    if (existing) throw new Error('ALREADY_FOLLOWING');
+    if (existing) {
+      logger.warn({ followerId, followingId }, 'Follow failed: Already following');
+      throw new Error('ALREADY_FOLLOWING');
+    }
 
     // Check if blocked (either way)
     const block = await prisma.block.findFirst({
@@ -30,9 +38,11 @@ export class SocialService {
     });
     if (block) throw new Error('FORBIDDEN');
 
-    return prisma.follow.create({
+    const follow = await prisma.follow.create({
       data: { followerId, followingId },
     });
+    logger.info({ followerId, followingId }, 'Followed user successfully');
+    return follow;
   }
 
   /**
@@ -55,11 +65,15 @@ export class SocialService {
    * Block a user
    */
   static async blockUser(blockerId: string, blockedId: string) {
+    logger.info({ blockerId, blockedId }, 'Attempting to block user');
     if (blockerId === blockedId) throw new Error('CANNOT_BLOCK_SELF');
 
     // Check if target user exists
     const target = await prisma.user.findUnique({ where: { id: blockedId, deletedAt: null } });
-    if (!target) throw new Error('USER_NOT_FOUND');
+    if (!target) {
+      logger.warn({ blockedId }, 'Block failed: Target user not found');
+      throw new Error('USER_NOT_FOUND');
+    }
 
     // Check if already blocked
     const existing = await prisma.block.findUnique({
@@ -67,12 +81,15 @@ export class SocialService {
         blockerId_blockedId: { blockerId, blockedId },
       },
     });
-    if (existing) throw new Error('ALREADY_BLOCKED');
+    if (existing) {
+      logger.warn({ blockerId, blockedId }, 'Block failed: Already blocked');
+      throw new Error('ALREADY_BLOCKED');
+    }
 
     // Transaction: Block + Unfollow (both ways)
-    return prisma.$transaction(async (tx) => {
+    const block = await prisma.$transaction(async (tx) => {
       // 1. Create block
-      const block = await tx.block.create({
+      const b = await tx.block.create({
         data: { blockerId, blockedId },
       });
 
@@ -86,8 +103,11 @@ export class SocialService {
         },
       });
 
-      return block;
+      return b;
     });
+
+    logger.info({ blockerId, blockedId }, 'Blocked user successfully and removed mutual follows');
+    return block;
   }
 
   /**

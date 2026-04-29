@@ -1,4 +1,4 @@
-import { CryptoPrimitives } from '../src/primitives.js';
+import { CryptoPrimitives } from '../src/primitives';
 
 describe('CryptoPrimitives', () => {
   it('should generate DH key pairs', async () => {

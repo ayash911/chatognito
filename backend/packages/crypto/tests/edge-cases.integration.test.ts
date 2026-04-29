@@ -1,5 +1,5 @@
-import { CryptoPrimitives, DoubleRatchet, X3DH } from '../src/index.js';
-import type { RatchetState } from '../src/index.js';
+import { CryptoPrimitives, DoubleRatchet, X3DH } from '../src/index';
+import type { RatchetState } from '../src/index';
 
 describe('E2EE Edge Cases and Reliability', () => {
   let aliceIK: any,

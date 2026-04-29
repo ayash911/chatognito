@@ -24,17 +24,18 @@ app.use('/identity/security', securityRouter);
 
 // Global Error Handler
 app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
-  const isExpectedError = [
-    'USERNAME_TAKEN',
-    'USERNAME_TAKEN_OR_PENDING',
-    'EMAIL_IN_USE',
-    'COOLDOWN_ACTIVE',
-    'INVALID_FORMAT',
-    'INVALID_CREDENTIALS',
-    'ACCOUNT_DELETED',
-    'USERNAME_RESERVED',
-    'USER_REMOVED',
-  ].some((msg) => err.message.includes(msg));
+  const isExpectedError =
+    [
+      'USERNAME_TAKEN',
+      'USERNAME_TAKEN_OR_PENDING',
+      'EMAIL_IN_USE',
+      'COOLDOWN_ACTIVE',
+      'INVALID_FORMAT',
+      'INVALID_CREDENTIALS',
+      'ACCOUNT_DELETED',
+      'USERNAME_RESERVED',
+      'USER_REMOVED',
+    ].some((msg) => err.message.includes(msg)) || err instanceof z.ZodError;
 
   if (isExpectedError) {
     logger.warn(`Expected Error: ${err.message} [${req.method} ${req.path}]`);

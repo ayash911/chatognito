@@ -3,6 +3,7 @@ import { UsernameService } from '../services/username.service';
 import { ProfileService } from '../services/profile.service';
 import { prisma } from '@common/db/prisma';
 import { AuthRequest, requireAuth } from '../middlewares/auth.middleware';
+import { requireOwnership } from '../middlewares/ownership.middleware';
 import { z } from 'zod';
 
 export const profileRouter = Router();
@@ -22,11 +23,22 @@ profileRouter.patch('/me', requireAuth, async (req: AuthRequest, res: Response) 
   res.json(user);
 });
 
-// Deactivate account
+// Deactivate account (Self)
 profileRouter.delete('/me', requireAuth, async (req: AuthRequest, res: Response) => {
   await ProfileService.deactivateAccount(req.user!.userId);
   res.json({ success: true, message: 'ACCOUNT_DEACTIVATED' });
 });
+
+// Deactivate account (Admin/Moderator or Self via ID)
+profileRouter.delete(
+  '/:userId',
+  requireAuth,
+  requireOwnership('userId'),
+  async (req: AuthRequest, res: Response) => {
+    await ProfileService.deactivateAccount(req.params.userId);
+    res.json({ success: true, message: 'ACCOUNT_DEACTIVATED' });
+  },
+);
 
 // Update username
 profileRouter.put('/me/username', requireAuth, async (req: AuthRequest, res: Response) => {

@@ -31,7 +31,8 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
     'FORBIDDEN',
   ];
 
-  const isExpected = expectedErrors.some((msg) => err.message.includes(msg));
+  const isExpected =
+    expectedErrors.some((msg) => err.message.includes(msg)) || err instanceof z.ZodError;
   if (isExpected) {
     logger.warn(`Expected Error: ${err.message} [${req.method} ${req.path}]`);
   } else {

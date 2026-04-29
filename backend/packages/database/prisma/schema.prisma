@@ -7,11 +7,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  user
+  moderator
+  admin
+
+  @@map("user_role")
+}
+
 model User {
   id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email                   String    @unique @db.VarChar(255)
   passwordHash            String?   @map("password_hash") @db.VarChar(255)
   username                String?   @unique @db.VarChar(50)
+  role                    UserRole  @default(user)
   usernameLastChangedAt   DateTime? @map("username_last_changed_at") @db.Timestamptz
   displayName             String?   @map("display_name") @db.VarChar(100)
   bio                     String?   @db.Text

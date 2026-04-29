@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '@common/db/prisma';
 import { requireAuth, AuthRequest } from '../middlewares/auth.middleware';
+import { CryptoPrimitives } from '@chatognito/crypto';
 
 export const securityRouter = Router();
 
@@ -21,6 +22,18 @@ securityRouter.post('/keys', async (req: AuthRequest, res: Response) => {
   const { identityPublicKey, signedPreKey, signedPreKeySignature, oneTimePreKeys } = schema.parse(
     req.body,
   );
+
+  // VITAL: Use our crypto package to verify the signature
+  const isSignatureValid = CryptoPrimitives.verify(
+    identityPublicKey,
+    Buffer.from(signedPreKey),
+    Buffer.from(signedPreKeySignature, 'hex'),
+  );
+
+  if (!isSignatureValid) {
+    return res.status(400).json({ error: 'INVALID_SIGNED_PREKEY_SIGNATURE' });
+  }
+
   const userId = req.user!.userId;
 
   await prisma.$transaction(async (tx) => {

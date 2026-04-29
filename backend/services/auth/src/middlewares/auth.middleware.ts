@@ -8,6 +8,7 @@ export interface AuthRequest extends Request {
   user?: {
     userId: string;
     email: string;
+    role: 'user' | 'moderator' | 'admin';
   };
 }
 
@@ -24,17 +25,20 @@ export const requireAuth = async (req: AuthRequest, res: Response, next: NextFun
       email: string;
     };
 
-    // Edge Case: Phantom User Check
+    // Edge Case: Phantom User Check & Role Fetch
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, deletedAt: true },
+      select: { id: true, role: true, deletedAt: true },
     });
 
     if (!user || user.deletedAt) {
       return res.status(401).json({ error: 'USER_REMOVED' });
     }
 
-    req.user = decoded;
+    req.user = {
+      ...decoded,
+      role: user.role as any,
+    };
     next();
   } catch (_err) {
     return res.status(401).json({ error: 'INVALID_TOKEN' });

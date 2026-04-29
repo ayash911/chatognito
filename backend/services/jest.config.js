@@ -5,12 +5,14 @@ module.exports = {
   setupFiles: ['./jest.setup.ts'],
   testMatch: ['**/tests/**/*.test.ts'],
   transform: {
-    '^.+\\.ts$': 'ts-jest',
+    '^.+\\.ts$': ['ts-jest', { tsconfig: { module: 'commonjs' } }],
   },
   moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
     '^@auth/(.*)$': '<rootDir>/auth/src/$1',
     '^@common/(.*)$': '<rootDir>/common/src/$1',
     '^@messaging/(.*)$': '<rootDir>/messaging/src/$1',
     '^@social/(.*)$': '<rootDir>/social/src/$1',
+    '^@chatognito/crypto$': '<rootDir>/../packages/crypto/src/index.ts',
   },
 };

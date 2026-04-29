@@ -204,4 +204,49 @@ describe('Messaging Integration Tests', () => {
     expect(deleteRes.status).toBe(403);
     expect(deleteRes.body.error).toBe('FORBIDDEN');
   });
+
+  it('should send an encrypted message', async () => {
+    const res = await request(messagingTarget)
+      .post(`/messaging/conversations/${conversationId}/messages`)
+      .set('Authorization', `Bearer ${userAToken}`)
+      .send({ content: 'ENCRYPTED_BLOB', isEncrypted: true, encryptionHeader: 'HEADER_DATA' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.content).toBe('ENCRYPTED_BLOB');
+    expect(res.body.isEncrypted).toBe(true);
+    expect(res.body.encryptionHeader).toBe('HEADER_DATA');
+  });
+
+  it('should allow a global admin to delete another users message', async () => {
+    // 1. Create an admin user
+    const adminEmail = `admin-${Date.now()}@example.com`;
+    const signupAdmin = await request(authTarget)
+      .post('/identity/auth/signup')
+      .send({ email: adminEmail, password: 'password123' });
+
+    // Promote to admin directly in db
+    await prisma.user.update({
+      where: { id: signupAdmin.body.id },
+      data: { role: 'admin' },
+    });
+
+    const loginAdmin = await request(authTarget)
+      .post('/identity/auth/login')
+      .send({ email: adminEmail, password: 'password123' });
+
+    // 2. User B sends a message
+    const sendRes = await request(messagingTarget)
+      .post(`/messaging/conversations/${conversationId}/messages`)
+      .set('Authorization', `Bearer ${userBToken}`)
+      .send({ content: 'I am bad' });
+    const bMessageId = sendRes.body.id;
+
+    // 3. Admin deletes the message
+    const deleteRes = await request(messagingTarget)
+      .delete(`/messaging/conversations/${conversationId}/messages/${bMessageId}`)
+      .set('Authorization', `Bearer ${loginAdmin.body.token}`);
+
+    expect(deleteRes.status).toBe(200);
+    expect(deleteRes.body.success).toBe(true);
+  });
 });

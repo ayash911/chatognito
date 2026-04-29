@@ -4,8 +4,8 @@ import { redis } from '@common/db/redis';
 
 import { app } from '@auth/index';
 
-// We hit the live running server if API_URL is provided, otherwise we use the Express app (ghost server)
-const requestTarget = process.env.API_URL || app;
+// We hit the live running server if AUTH_URL is provided, otherwise we use the Express app (ghost server)
+const requestTarget = process.env.AUTH_URL || app;
 
 describe('Auth Integration Tests (Live Server)', () => {
   const testEmail = `test-${Date.now()}@example.com`;
