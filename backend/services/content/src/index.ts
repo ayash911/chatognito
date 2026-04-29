@@ -6,7 +6,7 @@ import helmet from 'helmet';
 import { logger, httpLogger } from '@chatognito/logger';
 import { z } from 'zod';
 
-import { socialRouter } from './routes/social.routes';
+import { contentRouter } from './routes/post.routes';
 
 const app = express();
 
@@ -16,24 +16,15 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use('/social', socialRouter);
+app.use('/content', contentRouter);
 
-app.get('/social/health', (_req, res) => {
-  res.json({ status: 'up', service: 'social' });
+app.get('/content/health', (_req, res) => {
+  res.json({ status: 'up', service: 'content' });
 });
 
 // Global Error Handler
 app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
-  const expectedErrors = [
-    'ALREADY_FOLLOWING',
-    'NOT_FOLLOWING',
-    'CANNOT_FOLLOW_SELF',
-    'CANNOT_BLOCK_SELF',
-    'ALREADY_BLOCKED',
-    'NOT_BLOCKED',
-    'USER_NOT_FOUND',
-    'FORBIDDEN',
-  ];
+  const expectedErrors = ['POST_NOT_FOUND', 'COMMENT_NOT_FOUND', 'FORBIDDEN', 'AUTHOR_NOT_FOUND'];
 
   const isExpected =
     expectedErrors.some((msg) => err.message.includes(msg)) || err instanceof z.ZodError;
@@ -47,7 +38,7 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
     return res.status(400).json({ error: 'VALIDATION_ERROR', details: err.errors });
   }
 
-  if (err.message === 'USER_NOT_FOUND') {
+  if (err.message === 'POST_NOT_FOUND' || err.message === 'COMMENT_NOT_FOUND') {
     return res.status(404).json({ error: err.message });
   }
 
@@ -62,11 +53,11 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ error: 'INTERNAL_SERVER_ERROR' });
 });
 
-const PORT = process.env.SOCIAL_PORT || 8082;
+const PORT = process.env.CONTENT_PORT || 8084;
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
-    logger.info(`Social Service listening on port ${PORT}`);
+    logger.info(`Content Service listening on port ${PORT}`);
   });
 }
 

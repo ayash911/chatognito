@@ -1,8 +1,61 @@
 import { CryptoPrimitives } from './primitives';
-import type { EncryptionResult, RatchetHeader, RatchetState } from './types';
+import type { DHKeyPair, EncryptionResult, RatchetHeader, RatchetState } from './types';
 
 export class DoubleRatchet {
   private static readonly MAX_SKIP = 1000;
+
+  /**
+   * Creates Alice's first sending state after X3DH. This performs the initial
+   * DH ratchet step so the first outbound DM is immediately encryptable.
+   */
+  static async initializeAliceState(
+    sharedSecret: Buffer,
+    bobInitialDHPublicKey: string,
+  ): Promise<RatchetState> {
+    const state: RatchetState = {
+      rootKey: Buffer.from(sharedSecret),
+      sendChainKey: null,
+      recvChainKey: null,
+      sendDHKeyPair: await CryptoPrimitives.generateDHKeyPair(),
+      recvDHPublicKey: bobInitialDHPublicKey,
+      sendMsgNum: 0,
+      recvMsgNum: 0,
+      prevSendMsgNum: 0,
+      skippedMsgKeys: {},
+    };
+
+    this.initializeSendingChain(state);
+    return state;
+  }
+
+  /**
+   * Creates Bob's receiving state after X3DH. Bob's first sending chain is
+   * created automatically when he receives Alice's first ratchet header.
+   */
+  static initializeBobState(sharedSecret: Buffer, bobSignedPreKey: DHKeyPair): RatchetState {
+    return {
+      rootKey: Buffer.from(sharedSecret),
+      sendChainKey: null,
+      recvChainKey: null,
+      sendDHKeyPair: bobSignedPreKey,
+      recvDHPublicKey: null,
+      sendMsgNum: 0,
+      recvMsgNum: 0,
+      prevSendMsgNum: 0,
+      skippedMsgKeys: {},
+    };
+  }
+
+  static initializeSendingChain(state: RatchetState) {
+    if (!state.recvDHPublicKey) throw new Error('RECV_DH_NOT_INITIALIZED');
+    const dhOutput = CryptoPrimitives.diffieHellman(
+      state.sendDHKeyPair.private,
+      state.recvDHPublicKey,
+    );
+    const { nextRootKey, chainKey } = this.KDF_RK(state.rootKey, dhOutput);
+    state.rootKey = nextRootKey;
+    state.sendChainKey = chainKey;
+  }
 
   /**
    * Derives a Message Key from a Chain Key and advances the Chain Key

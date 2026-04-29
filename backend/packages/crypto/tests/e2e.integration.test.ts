@@ -40,39 +40,12 @@ describe('E2EE End-to-End Flow', () => {
     expect(aliceResult.sharedSecret).toEqual(bobSharedSecret);
 
     // 5. DOUBLE RATCHET: Initialize states
-    const aliceState: RatchetState = {
-      rootKey: aliceResult.sharedSecret,
-      sendChainKey: null,
-      recvChainKey: null,
-      sendDHKeyPair: await CryptoPrimitives.generateDHKeyPair(),
-      recvDHPublicKey: bobSPK.public, // Initial DH step
-      sendMsgNum: 0,
-      recvMsgNum: 0,
-      prevSendMsgNum: 0,
-      skippedMsgKeys: {},
-    };
-
-    const bobState: RatchetState = {
-      rootKey: bobSharedSecret,
-      sendChainKey: null,
-      recvChainKey: null,
-      sendDHKeyPair: bobSPK, // Initial DH step
-      recvDHPublicKey: null,
-      sendMsgNum: 0,
-      recvMsgNum: 0,
-      prevSendMsgNum: 0,
-      skippedMsgKeys: {},
-    };
-
-    // Alice sends the first message
-    // Manually initialize Alice's sending chain (first step)
-    const dhAlice = CryptoPrimitives.diffieHellman(
-      aliceState.sendDHKeyPair.private,
-      aliceState.recvDHPublicKey!,
+    const aliceState: RatchetState = await DoubleRatchet.initializeAliceState(
+      aliceResult.sharedSecret,
+      bobSPK.public,
     );
-    const aliceKDF = DoubleRatchet.KDF_RK(aliceState.rootKey, dhAlice);
-    aliceState.rootKey = aliceKDF.nextRootKey;
-    aliceState.sendChainKey = aliceKDF.chainKey;
+
+    const bobState: RatchetState = DoubleRatchet.initializeBobState(bobSharedSecret, bobSPK);
 
     const msg1 = await DoubleRatchet.encrypt(aliceState, 'Hello Bob! Secure channel established.');
 

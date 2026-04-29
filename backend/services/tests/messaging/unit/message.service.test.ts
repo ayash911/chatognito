@@ -74,6 +74,68 @@ describe('MessageService Unit Tests', () => {
     });
   });
 
+  describe('sendEncryptedDirect', () => {
+    const encryptionHeader = JSON.stringify({
+      version: 1,
+      algorithm: 'X3DH-DOUBLE-RATCHET-AES-256-GCM',
+      ratchetHeader: {
+        dhPubKey: '-----BEGIN PUBLIC KEY-----\nkey\n-----END PUBLIC KEY-----',
+        msgNum: 0,
+        prevMsgNum: 0,
+      },
+      iv: 'aabbcc',
+      tag: 'ddeeff',
+    });
+
+    it('should reject malformed encrypted DM headers', async () => {
+      await expect(
+        MessageService.sendEncryptedDirect('c1', 'u1', 'ciphertext', 'HEADER_DATA'),
+      ).rejects.toThrow('INVALID_ENCRYPTION_HEADER');
+    });
+
+    it('should reject encrypted sends to group conversations', async () => {
+      (prisma.conversation.findUnique as jest.Mock).mockResolvedValueOnce({ type: 'group' });
+
+      await expect(
+        MessageService.sendEncryptedDirect('c1', 'u1', 'ciphertext', encryptionHeader),
+      ).rejects.toThrow('ENCRYPTED_DM_ONLY');
+    });
+
+    it('should create an encrypted direct message', async () => {
+      (prisma.conversation.findUnique as jest.Mock)
+        .mockResolvedValueOnce({ type: 'direct' })
+        .mockResolvedValueOnce({
+          id: 'c1',
+          type: 'direct',
+          participants: [{ userId: 'u1' }, { userId: 'u2' }],
+        });
+      const createdMsg = {
+        id: 'm1',
+        content: 'ciphertext',
+        senderId: 'u1',
+        isEncrypted: true,
+      };
+      ((prisma as any).$transaction as jest.Mock).mockResolvedValue([createdMsg, {}]);
+
+      const result = await MessageService.sendEncryptedDirect(
+        'c1',
+        'u1',
+        'ciphertext',
+        encryptionHeader,
+      );
+
+      expect(result).toEqual(createdMsg);
+      expect((prisma as any).message.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            content: 'ciphertext',
+            isEncrypted: true,
+          }),
+        }),
+      );
+    });
+  });
+
   describe('list', () => {
     it('should throw NOT_A_PARTICIPANT for non-members', async () => {
       mockParticipant(false);

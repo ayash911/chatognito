@@ -1,5 +1,6 @@
 import { prisma } from '@common/db/prisma';
 import { logger } from '@chatognito/logger';
+import { E2EEService } from './e2ee.service';
 
 export class MessageService {
   /**
@@ -67,6 +68,35 @@ export class MessageService {
 
     logger.info({ messageId: message.id, conversationId }, 'Message sent successfully');
     return message;
+  }
+
+  /**
+   * Sends an encrypted one-on-one message from the realtime gateway.
+   * The server stores only ciphertext plus Double Ratchet metadata.
+   */
+  static async sendEncryptedDirect(
+    conversationId: string,
+    senderId: string,
+    ciphertext: string,
+    encryptionHeader: string,
+  ) {
+    E2EEService.assertEncryptedDirectMessage(ciphertext, encryptionHeader);
+
+    const conversation = await prisma.conversation.findUnique({
+      where: { id: conversationId },
+      select: { type: true },
+    });
+
+    if (!conversation) throw new Error('CONVERSATION_NOT_FOUND');
+    if (conversation.type !== 'direct') throw new Error('ENCRYPTED_DM_ONLY');
+
+    return this.send(
+      conversationId,
+      senderId,
+      ciphertext,
+      true,
+      E2EEService.serializeEnvelope(encryptionHeader),
+    );
   }
 
   /**

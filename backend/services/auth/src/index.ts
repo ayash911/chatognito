@@ -22,6 +22,10 @@ app.use('/identity/auth', authRouter);
 app.use('/identity/profile', profileRouter);
 app.use('/identity/security', securityRouter);
 
+app.get('/identity/health', (_req, res) => {
+  res.json({ status: 'up', service: 'auth' });
+});
+
 // Global Error Handler
 app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   const isExpectedError =

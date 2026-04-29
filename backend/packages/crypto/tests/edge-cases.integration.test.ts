@@ -1,14 +1,14 @@
 import { CryptoPrimitives, DoubleRatchet, X3DH } from '../src/index';
-import type { RatchetState } from '../src/index';
+import type { RatchetState, DHKeyPair, SigningKeyPair } from '../src/index';
 
 describe('E2EE Edge Cases and Reliability', () => {
-  let aliceIK: any,
-    bobIK: any,
-    bobSigningKey: any,
-    bobSPK: any,
-    bobOPK: any,
+  let aliceIK: DHKeyPair,
+    bobIK: DHKeyPair,
+    bobSigningKey: SigningKeyPair,
+    bobSPK: DHKeyPair,
+    bobOPK: DHKeyPair,
     bobSPKSignature: string;
-  let aliceResult: any, bobSharedSecret: any;
+  let aliceResult: { sharedSecret: Buffer; initialDHKeyPair: DHKeyPair }, bobSharedSecret: Buffer;
 
   beforeAll(async () => {
     // Standard setup for tests
@@ -39,38 +39,12 @@ describe('E2EE Edge Cases and Reliability', () => {
   });
 
   const createInitialStates = async () => {
-    const aliceState: RatchetState = {
-      rootKey: aliceResult.sharedSecret,
-      sendChainKey: null,
-      recvChainKey: null,
-      sendDHKeyPair: await CryptoPrimitives.generateDHKeyPair(),
-      recvDHPublicKey: bobSPK.public,
-      sendMsgNum: 0,
-      recvMsgNum: 0,
-      prevSendMsgNum: 0,
-      skippedMsgKeys: {},
-    };
-
-    const bobState: RatchetState = {
-      rootKey: bobSharedSecret,
-      sendChainKey: null,
-      recvChainKey: null,
-      sendDHKeyPair: bobSPK,
-      recvDHPublicKey: null,
-      sendMsgNum: 0,
-      recvMsgNum: 0,
-      prevSendMsgNum: 0,
-      skippedMsgKeys: {},
-    };
-
-    // Initialize Alice's first sending chain
-    const dhAlice = CryptoPrimitives.diffieHellman(
-      aliceState.sendDHKeyPair.private,
-      aliceState.recvDHPublicKey!,
+    const aliceState: RatchetState = await DoubleRatchet.initializeAliceState(
+      aliceResult.sharedSecret,
+      bobSPK.public,
     );
-    const aliceKDF = DoubleRatchet.KDF_RK(aliceState.rootKey, dhAlice);
-    aliceState.rootKey = aliceKDF.nextRootKey;
-    aliceState.sendChainKey = aliceKDF.chainKey;
+
+    const bobState: RatchetState = DoubleRatchet.initializeBobState(bobSharedSecret, bobSPK);
 
     return { aliceState, bobState };
   };

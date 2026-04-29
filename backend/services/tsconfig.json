@@ -17,6 +17,7 @@
       "@common/*": ["common/src/*"],
       "@messaging/*": ["messaging/src/*"],
       "@social/*": ["social/src/*"],
+      "@gateway/*": ["gateway/src/*"],
       "@chatognito/crypto": ["../packages/crypto/src/index.ts"]
     }
   },

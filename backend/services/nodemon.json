@@ -1,5 +1,4 @@
 {
-  "watch": ["auth/src", "messaging/src", "social/src", "common/src"],
   "ext": "ts,json",
   "ignore": ["tests/*", "dist/*"],
   "exec": "npx ts-node -r tsconfig-paths/register"

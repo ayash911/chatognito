@@ -37,7 +37,7 @@ export const requireAuth = async (req: AuthRequest, res: Response, next: NextFun
 
     req.user = {
       ...decoded,
-      role: user.role as any,
+      role: user.role as 'user' | 'moderator' | 'admin',
     };
     next();
   } catch (_err) {

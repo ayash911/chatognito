@@ -12,23 +12,48 @@ securityRouter.use(requireAuth);
  * Upload key bundle for X3DH
  */
 securityRouter.post('/keys', async (req: AuthRequest, res: Response) => {
-  const schema = z.object({
-    identityPublicKey: z.string(),
-    signedPreKey: z.string(),
-    signedPreKeySignature: z.string(),
-    oneTimePreKeys: z.array(z.string()).min(1),
-  });
+  const schema = z
+    .object({
+      identityPublicKey: z.string().optional(),
+      identityDhPublicKey: z.string().optional(),
+      identitySigningPublicKey: z.string().optional(),
+      signedPreKey: z.string(),
+      signedPreKeySignature: z.string(),
+      oneTimePreKeys: z.array(z.string()).min(1),
+    })
+    .refine((body) => body.identitySigningPublicKey || body.identityPublicKey, {
+      message: 'IDENTITY_SIGNING_PUBLIC_KEY_REQUIRED',
+      path: ['identitySigningPublicKey'],
+    })
+    .refine((body) => body.identityDhPublicKey || body.identityPublicKey, {
+      message: 'IDENTITY_DH_PUBLIC_KEY_REQUIRED',
+      path: ['identityDhPublicKey'],
+    });
 
-  const { identityPublicKey, signedPreKey, signedPreKeySignature, oneTimePreKeys } = schema.parse(
-    req.body,
-  );
+  const {
+    identityPublicKey,
+    identityDhPublicKey,
+    identitySigningPublicKey,
+    signedPreKey,
+    signedPreKeySignature,
+    oneTimePreKeys,
+  } = schema.parse(req.body);
+
+  const signingPublicKey = identitySigningPublicKey ?? identityPublicKey!;
+  const dhPublicKey = identityDhPublicKey ?? identityPublicKey!;
 
   // VITAL: Use our crypto package to verify the signature
-  const isSignatureValid = CryptoPrimitives.verify(
-    identityPublicKey,
-    Buffer.from(signedPreKey),
-    Buffer.from(signedPreKeySignature, 'hex'),
-  );
+  const isSignatureValid = (() => {
+    try {
+      return CryptoPrimitives.verify(
+        signingPublicKey,
+        Buffer.from(signedPreKey),
+        Buffer.from(signedPreKeySignature, 'hex'),
+      );
+    } catch (_err) {
+      return false;
+    }
+  })();
 
   if (!isSignatureValid) {
     return res.status(400).json({ error: 'INVALID_SIGNED_PREKEY_SIGNATURE' });
@@ -44,7 +69,9 @@ securityRouter.post('/keys', async (req: AuthRequest, res: Response) => {
       where: { userId },
       create: {
         userId,
-        identityPublicKey,
+        identityPublicKey: signingPublicKey,
+        identityDhPublicKey: dhPublicKey,
+        identitySigningPublicKey: signingPublicKey,
         signedPreKey,
         signedPreKeySignature,
         oneTimePreKeys: {
@@ -52,7 +79,9 @@ securityRouter.post('/keys', async (req: AuthRequest, res: Response) => {
         },
       },
       update: {
-        identityPublicKey,
+        identityPublicKey: signingPublicKey,
+        identityDhPublicKey: dhPublicKey,
+        identitySigningPublicKey: signingPublicKey,
         signedPreKey,
         signedPreKeySignature,
         oneTimePreKeys: {
@@ -91,6 +120,8 @@ securityRouter.get('/keys/:targetUserId', async (req: AuthRequest, res: Response
 
   res.json({
     identityPublicKey: bundle.identityPublicKey,
+    identityDhPublicKey: bundle.identityDhPublicKey ?? bundle.identityPublicKey,
+    identitySigningPublicKey: bundle.identitySigningPublicKey ?? bundle.identityPublicKey,
     signedPreKey: bundle.signedPreKey,
     signedPreKeySignature: bundle.signedPreKeySignature,
     oneTimePreKey: opk ? opk.publicKey : null,

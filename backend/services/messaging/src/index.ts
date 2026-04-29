@@ -18,6 +18,10 @@ app.use(express.json());
 // Routes
 app.use('/messaging/conversations', conversationRouter);
 
+app.get('/messaging/health', (_req, res) => {
+  res.json({ status: 'up', service: 'messaging' });
+});
+
 // Global Error Handler
 app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   const expectedErrors = [
@@ -32,6 +36,8 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
     'USER_NOT_FOUND',
     'FORBIDDEN',
     'USER_REMOVED',
+    'INVALID_ENCRYPTION_HEADER',
+    'ENCRYPTED_DM_ONLY',
   ];
 
   const isExpected =
@@ -64,6 +70,8 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
     err.message === 'MESSAGE_TOO_LONG' ||
     err.message === 'GROUP_NEEDS_MORE_MEMBERS' ||
     err.message === 'INVALID_GROUP_TITLE' ||
+    err.message === 'INVALID_ENCRYPTION_HEADER' ||
+    err.message === 'ENCRYPTED_DM_ONLY' ||
     err.message === 'NOT_A_GROUP' ||
     err.message === 'ALREADY_A_MEMBER' ||
     err.message === 'CANNOT_REMOVE_LAST_PARTICIPANT' ||

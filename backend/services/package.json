@@ -4,18 +4,26 @@
   "private": true,
   "description": "Container for Chatognito backend services",
   "scripts": {
-    "dev": "concurrently --raw \"npm run dev:auth\" \"npm run dev:messaging\" \"npm run dev:social\"",
-    "dev:auth": "nodemon auth/src/index.ts",
-    "dev:messaging": "nodemon messaging/src/index.ts",
-    "dev:social": "nodemon social/src/index.ts",
+    "dev": "concurrently --raw \"npm run dev:auth\" \"npm run dev:messaging\" \"npm run dev:social\" \"npm run dev:gateway\" \"npm run dev:content\"",
+    "dev:auth": "nodemon --watch auth/src --watch common/src auth/src/index.ts",
+    "dev:messaging": "nodemon --watch messaging/src --watch common/src messaging/src/index.ts",
+    "dev:social": "nodemon --watch social/src --watch common/src social/src/index.ts",
+    "dev:gateway": "nodemon --watch gateway/src --watch common/src gateway/src/index.ts",
+    "dev:content": "nodemon --watch content/src --watch common/src content/src/index.ts",
     "test": "jest tests --runInBand",
-    "test:unit": "jest tests/auth/unit",
-    "test:integration": "jest tests/auth/integration --runInBand"
+    "test:unit": "jest tests/*/unit",
+    "test:integration": "jest tests/*/integration --runInBand",
+    "test:auth": "jest tests/auth --runInBand",
+    "test:messaging": "jest tests/messaging --runInBand",
+    "test:social": "jest tests/social --runInBand",
+    "test:content": "jest tests/content --runInBand",
+    "test:gateway": "jest tests/gateway --runInBand"
   },
   "dependencies": {
     "@chatognito/database": "*",
     "@chatognito/logger": "*",
     "@chatognito/crypto": "*",
+    "@socket.io/redis-adapter": "^8.3.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -25,6 +33,7 @@
     "ioredis": "^5.4.1",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.11.5",
+    "socket.io": "^4.7.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -39,6 +48,7 @@
     "concurrently": "^9.2.1",
     "jest": "^29.7.0",
     "nodemon": "^3.1.3",
+    "socket.io-client": "^4.7.5",
     "supertest": "^7.2.2",
     "ts-jest": "^29.1.4",
     "ts-node": "^10.9.2",

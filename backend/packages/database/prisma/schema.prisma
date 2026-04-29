@@ -29,6 +29,7 @@ model User {
   isPrivate               Boolean   @default(false) @map("is_private")
   twoFactorSecret         String?   @map("two_factor_secret") @db.VarChar(255)
   twoFactorEnabled        Boolean   @default(false) @map("two_factor_enabled")
+  lastSeenAt              DateTime? @map("last_seen_at") @db.Timestamptz
   createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt               DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
   deletedAt               DateTime? @map("deleted_at") @db.Timestamptz
@@ -44,6 +45,9 @@ model User {
   blockedUsers            Block[]  @relation("blocker")
   blockedBy               Block[]  @relation("blocked")
   keyBundle               KeyBundle?
+  posts                   Post[]
+  postLikes               PostLike[]
+  postComments            PostComment[]
 
   @@map("users")
   @@index([username])
@@ -187,15 +191,17 @@ model Message {
 // -----------------------------------------------------------------------------
 
 model KeyBundle {
-  userId                String   @id @map("user_id") @db.Uuid
-  identityPublicKey     String   @map("identity_public_key") @db.Text
-  signedPreKey          String   @map("signed_pre_key") @db.Text
-  signedPreKeySignature String   @map("signed_pre_key_signature") @db.Text
-  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  userId                   String   @id @map("user_id") @db.Uuid
+  identityPublicKey        String   @map("identity_public_key") @db.Text
+  identityDhPublicKey      String?  @map("identity_dh_public_key") @db.Text
+  identitySigningPublicKey String?  @map("identity_signing_public_key") @db.Text
+  signedPreKey             String   @map("signed_pre_key") @db.Text
+  signedPreKeySignature    String   @map("signed_pre_key_signature") @db.Text
+  createdAt                DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt                DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
-  oneTimePreKeys        OneTimePreKey[]
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  oneTimePreKeys           OneTimePreKey[]
+  user                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("key_bundles")
 }
@@ -209,4 +215,90 @@ model OneTimePreKey {
   keyBundle KeyBundle @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
   @@map("one_time_pre_keys")
+}
+
+// -----------------------------------------------------------------------------
+// CONTENT DOMAIN
+// -----------------------------------------------------------------------------
+
+enum PostVisibility {
+  public
+  followers
+  private
+
+  @@map("post_visibility")
+}
+
+model Post {
+  id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  authorId   String         @map("author_id") @db.Uuid
+  content    String         @db.Text
+  visibility PostVisibility @default(public)
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt  DateTime?      @map("deleted_at") @db.Timestamptz
+
+  author     User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  media      PostMedia[]
+  likes      PostLike[]
+  comments   PostComment[]
+
+  @@map("posts")
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+enum MediaType {
+  image
+  video
+
+  @@map("media_type")
+}
+
+model PostMedia {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  postId    String    @map("post_id") @db.Uuid
+  type      MediaType
+  url       String    @db.VarChar(1024)
+  metadata  Json? // To store width, height, blurhash, duration, etc.
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("post_media")
+  @@index([postId])
+}
+
+model PostLike {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  postId    String   @map("post_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@map("post_likes")
+  @@index([userId])
+}
+
+model PostComment {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  postId    String    @map("post_id") @db.Uuid
+  authorId  String    @map("author_id") @db.Uuid
+  content   String    @db.Text
+  parentId  String?   @map("parent_id") @db.Uuid // For threaded comments
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  post   Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent PostComment? @relation("Thread", fields: [parentId], references: [id], onDelete: Cascade)
+  replies PostComment[] @relation("Thread")
+
+  @@map("post_comments")
+  @@index([postId])
+  @@index([authorId])
 }

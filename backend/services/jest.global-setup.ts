@@ -21,13 +21,15 @@ const checkPort = (port: number): Promise<boolean> => {
 };
 
 export default async function globalSetup() {
-  const [authLive, messagingLive, socialLive] = await Promise.all([
+  const [authLive, messagingLive, socialLive, gatewayLive, contentLive] = await Promise.all([
     checkPort(8080),
     checkPort(8081),
     checkPort(8082),
+    checkPort(8083),
+    checkPort(8084),
   ]);
 
-  if (authLive || messagingLive || socialLive) {
+  if (authLive || messagingLive || socialLive || gatewayLive || contentLive) {
     console.log('\nLive servers detected:');
     if (authLive) {
       console.log(' - Auth Service (8080)');
@@ -41,6 +43,14 @@ export default async function globalSetup() {
     if (socialLive) {
       console.log(' - Social Service (8082)');
       process.env.SOCIAL_URL = 'http://localhost:8082';
+    }
+    if (gatewayLive) {
+      console.log(' - Gateway Service (8083)');
+      process.env.GATEWAY_URL = 'http://localhost:8083';
+    }
+    if (contentLive) {
+      console.log(' - Content Service (8084)');
+      process.env.CONTENT_URL = 'http://localhost:8084';
     }
     console.log('Integration tests will run against live instances.\n');
   } else {
