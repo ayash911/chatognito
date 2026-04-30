@@ -8,8 +8,11 @@ import { z } from 'zod';
 
 import { conversationRouter } from './routes/conversation.routes';
 
+import { dashboardLogger } from '@common/middleware/dashboard.middleware';
+
 const app = express();
 
+app.use(dashboardLogger('Messaging Service'));
 app.use(httpLogger);
 app.use(helmet());
 app.use(cors());

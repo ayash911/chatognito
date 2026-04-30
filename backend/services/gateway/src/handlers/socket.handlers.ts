@@ -58,7 +58,17 @@ export function registerSocketHandlers(
   nonceStore: PacketNonceStore,
 ) {
   io.on('connection', async (socket) => {
+    if (socket.handshake.query.type === 'dashboard') {
+      logger.info({ socketId: socket.id }, 'Dashboard socket connected');
+      return;
+    }
+
     const user = socket.data.user;
+    if (!user) {
+      socket.disconnect(true);
+      return;
+    }
+
     logger.info({ socketId: socket.id, userId: user.userId }, 'Gateway socket connected');
     socket.join(userRoom(user.userId));
 

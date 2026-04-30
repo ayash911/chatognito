@@ -8,19 +8,22 @@ import { z } from 'zod';
 
 import { socialRouter } from './routes/social.routes';
 
+import { dashboardLogger } from '@common/middleware/dashboard.middleware';
+
 const app = express();
 
+app.use(dashboardLogger('Social Service'));
 app.use(httpLogger);
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
-// Routes
-app.use('/social', socialRouter);
-
 app.get('/social/health', (_req, res) => {
   res.json({ status: 'up', service: 'social' });
 });
+
+// Routes
+app.use('/social', socialRouter);
 
 // Global Error Handler
 app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {

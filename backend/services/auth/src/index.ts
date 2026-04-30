@@ -10,8 +10,11 @@ import { profileRouter } from './routes/profile.routes';
 import { securityRouter } from './routes/security.routes';
 import { z } from 'zod';
 
+import { dashboardLogger } from '@common/middleware/dashboard.middleware';
+
 const app = express();
 
+app.use(dashboardLogger('Auth Service'));
 app.use(httpLogger);
 app.use(helmet());
 app.use(cors());

@@ -112,6 +112,8 @@ export interface ServerToClientEvents {
   'message:read': (payload: { conversationId: string; userId: string; readAt: string }) => void;
   'presence:update': (payload: PresenceStatus) => void;
   'gateway:error': (payload: GatewayAckFailure['error']) => void;
+  'dashboard:log': (payload: unknown) => void;
+  'dashboard:health_update': (payload: unknown) => void;
 }
 
 export interface InterServerEvents {

@@ -14,6 +14,16 @@ export default tseslint.config(
     },
   },
   {
+    files: ['**/src/dashboard/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        io: 'readonly',
+        fetch: 'readonly',
+      },
+    },
+  },
+  {
     ignores: ['**/dist/**', '**/node_modules/**', '**/prisma/**'],
   },
   {

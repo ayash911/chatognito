@@ -8,8 +8,11 @@ import { z } from 'zod';
 
 import { contentRouter } from './routes/post.routes';
 
+import { dashboardLogger } from '@common/middleware/dashboard.middleware';
+
 const app = express();
 
+app.use(dashboardLogger('Content Service'));
 app.use(httpLogger);
 app.use(helmet());
 app.use(cors());

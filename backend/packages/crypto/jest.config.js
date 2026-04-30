@@ -9,7 +9,7 @@ module.exports = {
     '^.+\\.tsx?$': [
       'ts-jest',
       {
-        tsconfig: { module: 'commonjs', moduleResolution: 'node' }
+        tsconfig: { module: 'commonjs', moduleResolution: 'node' },
       },
     ],
   },

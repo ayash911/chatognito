@@ -35,19 +35,44 @@ const io = new Server<
   },
 });
 
+import { dashboardLogger } from '@common/middleware/dashboard.middleware';
+import path from 'path';
+
+app.use(dashboardLogger('Gateway Service'));
 app.use(httpLogger);
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+app.use('/dashboard', express.static(path.join(__dirname, 'dashboard')));
+
+// Dashboard Route
+app.get('/gateway/dashboard', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'dashboard', 'index.html'));
+});
+
+// Setup Redis Subscriber for Dashboard
+const logSubClient = redis.duplicate();
+logSubClient.subscribe('chatognito:dashboard:logs').catch((err) => {
+  logger.error({ err }, 'Failed to subscribe to dashboard logs');
+});
+
+logSubClient.on('message', (channel, message) => {
+  if (channel === 'chatognito:dashboard:logs') {
+    io.emit('dashboard:log', JSON.parse(message));
+  }
+});
 
 app.get('/gateway/health', (_req, res) => {
   res.json({ ok: true, service: 'gateway' });
 });
 
-app.get('/gateway/status', async (_req, res) => {
+app.get('/gateway/status', async (req, res) => {
+  if (req.query.force === 'true') {
+    const newStatus = await HealthService.checkAll();
+    return res.json(newStatus);
+  }
   const status = HealthService.getCachedStatus();
   if (status.length === 0) {
-    // If cache is empty, trigger a check
     const newStatus = await HealthService.checkAll();
     return res.json(newStatus);
   }
@@ -59,6 +84,9 @@ const presenceService = new PresenceService(redis, prisma as unknown as Presence
 const nonceStore = new RedisNonceStore(redis as unknown as RedisLikeNonceStore);
 
 io.use(async (socket, next) => {
+  if (socket.handshake.query.type === 'dashboard') {
+    return next();
+  }
   try {
     socket.data.user = await authService.authenticate(socket);
     next();
@@ -80,7 +108,7 @@ const PORT = process.env.GATEWAY_PORT || 8083;
 if (process.env.NODE_ENV !== 'test') {
   server.listen(PORT, () => {
     logger.info(`Gateway Service listening on port ${PORT}`);
-    HealthService.startBackgroundCheck();
+    HealthService.startBackgroundCheck(io, 2500000);
   });
 }
 

@@ -33,7 +33,7 @@ export class HealthService {
           const status: ServiceStatus = {
             name: svc.name,
             url: svc.url,
-            status: res.ok ? 'up' : 'down',
+            status: res.ok || res.status === 401 ? 'up' : 'down',
             latency,
             lastChecked: new Date().toISOString(),
           };
@@ -64,12 +64,21 @@ export class HealthService {
   /**
    * Starts a background interval to check health.
    */
-  static startBackgroundCheck(intervalMs = 30000) {
+  static startBackgroundCheck(io?: any, intervalMs = 30000) {
     logger.info(`Starting background health checks every ${intervalMs}ms`);
-    setInterval(() => {
-      this.checkAll().catch((err) => logger.error({ err }, 'Background health check failed'));
+    setInterval(async () => {
+      try {
+        const results = await this.checkAll();
+        if (io) {
+          io.emit('dashboard:health_update', results);
+        }
+      } catch (err) {
+        logger.error({ err }, 'Background health check failed');
+      }
     }, intervalMs);
     // Initial check
-    this.checkAll();
+    this.checkAll().then((results) => {
+      if (io) io.emit('dashboard:health_update', results);
+    });
   }
 }

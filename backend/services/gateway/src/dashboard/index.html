@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chatognito | Service Dashboard</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: monospace;
+        padding: 20px;
+      }
+      .grid {
+        display: flex;
+        gap: 20px;
+      }
+      .col {
+        flex: 1;
+        border: 1px solid #ccc;
+        padding: 10px;
+        height: 90vh;
+        overflow-y: auto;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+      }
+      li {
+        border-bottom: 1px solid #eee;
+        padding: 5px 0;
+        margin-bottom: 5px;
+      }
+      pre {
+        background: #f4f4f4;
+        padding: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Chatognito Basic Dashboard</h1>
+    <div class="grid">
+      <div class="col" style="flex: 0.3">
+        <h2>Service Health</h2>
+        <div style="margin-bottom: 10px">
+          <label>Check interval (ms): </label>
+          <input type="number" id="healthInterval" value="5000" style="width: 80px" />
+          <button id="updateInterval">Update</button>
+        </div>
+        <div id="healthGrid">Loading...</div>
+      </div>
+      <div class="col" style="flex: 0.7">
+        <h2>Live Traffic Logs <button id="clearLogs">Clear</button></h2>
+        <h3 id="logTarget">All Traffic</h3>
+        <ul id="logContainer">
+          Waiting for logs...
+        </ul>
+      </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/dashboard/dashboard.js"></script>
+  </body>
+</html>
