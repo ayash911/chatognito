@@ -133,7 +133,7 @@ describe('Messaging Integration Tests', () => {
 
   it('should mark conversation as read', async () => {
     const res = await request(messagingTarget)
-      .post(`/messaging/conversations/${conversationId}/read`)
+      .put(`/messaging/conversations/${conversationId}/read`)
       .set('Authorization', `Bearer ${userBToken}`);
 
     expect(res.status).toBe(200);

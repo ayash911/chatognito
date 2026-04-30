@@ -191,4 +191,60 @@ export class SocialService {
       isFriend: !!following && !!followedBy,
     };
   }
+
+  /**
+   * Discovery V1: Suggest users based on mutual follows (friends of friends).
+   */
+  static async getSuggestions(userId: string, limit = 10) {
+    const blocks = await prisma.block.findMany({
+      where: { OR: [{ blockerId: userId }, { blockedId: userId }] },
+    });
+    const blockedIds = new Set(blocks.flatMap((b) => [b.blockerId, b.blockedId]));
+
+    const following = await prisma.follow.findMany({
+      where: { followerId: userId },
+      select: { followingId: true },
+    });
+    const followingIds = new Set(following.map((f) => f.followingId));
+
+    const fof = await prisma.follow.findMany({
+      where: {
+        followerId: { in: Array.from(followingIds) },
+        followingId: {
+          notIn: [...Array.from(followingIds), userId, ...Array.from(blockedIds)],
+        },
+      },
+      select: { followingId: true },
+    });
+
+    const suggestionsCount: Record<string, number> = {};
+    for (const f of fof) {
+      suggestionsCount[f.followingId] = (suggestionsCount[f.followingId] || 0) + 1;
+    }
+
+    const sortedIds = Object.entries(suggestionsCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map((entry) => entry[0]);
+
+    if (sortedIds.length === 0) {
+      // Fallback: random public users
+      return prisma.user.findMany({
+        where: {
+          isPrivate: false,
+          deletedAt: null,
+          id: { notIn: [...Array.from(followingIds), userId, ...Array.from(blockedIds)] },
+        },
+        take: limit,
+        select: { id: true, username: true, displayName: true, avatarUrl: true },
+      });
+    }
+
+    const users = await prisma.user.findMany({
+      where: { id: { in: sortedIds }, deletedAt: null },
+      select: { id: true, username: true, displayName: true, avatarUrl: true },
+    });
+
+    return sortedIds.map((id) => users.find((u) => u.id === id)).filter(Boolean);
+  }
 }

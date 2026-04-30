@@ -3,6 +3,7 @@ import { z } from 'zod';
 import jwt from 'jsonwebtoken';
 import { requireAuth, AuthRequest } from '@auth/middlewares/auth.middleware';
 import { PostService } from '../services/post.service';
+import { logger } from '@chatognito/logger';
 
 export const contentRouter = Router();
 
@@ -52,13 +53,35 @@ contentRouter.delete('/posts/:id', requireAuth, async (req: AuthRequest, res) =>
 });
 
 // Likes
-contentRouter.post('/posts/:id/like', requireAuth, async (req: AuthRequest, res) => {
+contentRouter.put('/posts/:id/like', requireAuth, async (req: AuthRequest, res) => {
   await PostService.likePost(req.user!.userId, req.params.id);
   res.json({ success: true });
 });
 
 contentRouter.delete('/posts/:id/like', requireAuth, async (req: AuthRequest, res) => {
   await PostService.unlikePost(req.user!.userId, req.params.id);
+  res.json({ success: true });
+});
+
+// Shares
+contentRouter.put('/posts/:id/share', requireAuth, async (req: AuthRequest, res) => {
+  await PostService.sharePost(req.user!.userId, req.params.id);
+  res.json({ success: true });
+});
+
+contentRouter.delete('/posts/:id/share', requireAuth, async (req: AuthRequest, res) => {
+  await PostService.unsharePost(req.user!.userId, req.params.id);
+  res.json({ success: true });
+});
+
+// Bookmarks
+contentRouter.put('/posts/:id/bookmark', requireAuth, async (req: AuthRequest, res) => {
+  await PostService.bookmarkPost(req.user!.userId, req.params.id);
+  res.json({ success: true });
+});
+
+contentRouter.delete('/posts/:id/bookmark', requireAuth, async (req: AuthRequest, res) => {
+  await PostService.unbookmarkPost(req.user!.userId, req.params.id);
   res.json({ success: true });
 });
 
@@ -114,4 +137,57 @@ contentRouter.get('/feed', requireAuth, async (req: AuthRequest, res) => {
 
   const feed = await PostService.getFeed(req.user!.userId, limit, cursor);
   res.json(feed);
+});
+
+// Profile Timeline
+contentRouter.get('/users/:userId/posts', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  let viewerId: string | undefined;
+
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      const token = authHeader.split(' ')[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as jwt.JwtPayload;
+      viewerId = decoded.userId;
+    } catch (_err) {
+      logger.error('Failed to verify token');
+    }
+  }
+
+  const { limit, cursor } = z
+    .object({
+      limit: z.string().transform(Number).optional(),
+      cursor: z.string().uuid().optional(),
+    })
+    .parse(req.query);
+
+  const posts = await PostService.getProfileTimeline(req.params.userId, viewerId, limit, cursor);
+  res.json(posts);
+});
+
+// Search Posts
+contentRouter.get('/search', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  let viewerId: string | undefined;
+
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      const token = authHeader.split(' ')[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as jwt.JwtPayload;
+      viewerId = decoded.userId;
+    } catch (_err) {
+      logger.error('Failed to verify token');
+    }
+  }
+
+  const { q, limit, cursor } = z
+    .object({
+      q: z.string().min(1),
+      limit: z.string().transform(Number).optional(),
+      cursor: z.string().uuid().optional(),
+    })
+    .parse(req.query);
+
+  const posts = await PostService.searchPosts(q, viewerId, limit, cursor);
+  res.json(posts);
 });

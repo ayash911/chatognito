@@ -88,7 +88,7 @@ describe('Content Integration Tests', () => {
   describe('Engagement: Likes and Comments', () => {
     it('should like a post', async () => {
       const res = await request(contentRequest)
-        .post(`/content/posts/${postId}/like`)
+        .put(`/content/posts/${postId}/like`)
         .set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(200);
 
@@ -107,6 +107,26 @@ describe('Content Integration Tests', () => {
 
       const post = await request(contentRequest).get(`/content/posts/${postId}`);
       expect(post.body._count.comments).toBe(1);
+    });
+
+    it('should share a post', async () => {
+      const res = await request(contentRequest)
+        .put(`/content/posts/${postId}/share`)
+        .set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+
+      const post = await request(contentRequest).get(`/content/posts/${postId}`);
+      expect(post.body._count.shares).toBe(1);
+    });
+
+    it('should bookmark a post', async () => {
+      const res = await request(contentRequest)
+        .put(`/content/posts/${postId}/bookmark`)
+        .set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+
+      const post = await request(contentRequest).get(`/content/posts/${postId}`);
+      expect(post.body._count.bookmarks).toBe(1);
     });
   });
 

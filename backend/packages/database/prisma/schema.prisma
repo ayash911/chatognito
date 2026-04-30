@@ -48,6 +48,8 @@ model User {
   posts                   Post[]
   postLikes               PostLike[]
   postComments            PostComment[]
+  postShares              PostShare[]
+  postBookmarks           PostBookmark[]
 
   @@map("users")
   @@index([username])
@@ -242,6 +244,8 @@ model Post {
   media      PostMedia[]
   likes      PostLike[]
   comments   PostComment[]
+  shares     PostShare[]
+  bookmarks  PostBookmark[]
 
   @@map("posts")
   @@index([authorId])
@@ -301,4 +305,33 @@ model PostComment {
   @@map("post_comments")
   @@index([postId])
   @@index([authorId])
+}
+
+model PostShare {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  postId    String   @map("post_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@map("post_shares")
+  @@index([userId])
+  @@index([postId])
+}
+
+model PostBookmark {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  postId    String   @map("post_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@map("post_bookmarks")
+  @@index([userId])
 }

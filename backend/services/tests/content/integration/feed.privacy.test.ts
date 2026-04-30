@@ -124,7 +124,7 @@ describe('Feed Privacy and Blocking Integration Tests', () => {
     it('should show public and followers posts from private accounts to followers', async () => {
       // Liam follows Priya
       await request(socialRequest)
-        .post(`/social/follow/${users[2].id}`)
+        .put(`/social/${users[2].id}/follow`)
         .set('Authorization', `Bearer ${users[3].token}`);
 
       const res = await request(contentRequest)
@@ -141,7 +141,7 @@ describe('Feed Privacy and Blocking Integration Tests', () => {
     it('should hide posts from users the requester has blocked', async () => {
       // Maya blocks Noah
       await request(socialRequest)
-        .post(`/social/block/${users[1].id}`)
+        .put(`/social/${users[1].id}/block`)
         .set('Authorization', `Bearer ${users[0].token}`);
 
       const res = await request(contentRequest)
@@ -165,7 +165,7 @@ describe('Feed Privacy and Blocking Integration Tests', () => {
     it('should restore visibility after unblocking', async () => {
       // Maya unblocks Noah
       await request(socialRequest)
-        .post(`/social/unblock/${users[1].id}`)
+        .delete(`/social/${users[1].id}/block`)
         .set('Authorization', `Bearer ${users[0].token}`);
 
       const res = await request(contentRequest)
@@ -222,7 +222,7 @@ describe('Feed Privacy and Blocking Integration Tests', () => {
     it('should forbid blocked user from seeing any post from blocker', async () => {
       // Maya blocks Noah
       await request(socialRequest)
-        .post(`/social/block/${users[1].id}`)
+        .put(`/social/${users[1].id}/block`)
         .set('Authorization', `Bearer ${users[0].token}`);
 
       const res = await request(contentRequest)

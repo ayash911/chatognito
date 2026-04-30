@@ -64,7 +64,7 @@ profileRouter.get('/me/username/history', requireAuth, async (req: AuthRequest, 
 });
 
 // Enable 2FA (Mock)
-profileRouter.post('/me/2fa/enable', requireAuth, async (req: AuthRequest, res: Response) => {
+profileRouter.put('/me/2fa', requireAuth, async (req: AuthRequest, res: Response) => {
   const secret = 'MOCK_SECRET_' + Math.random().toString(36).substring(7);
   await prisma.user.update({
     where: { id: req.user!.userId },
@@ -86,6 +86,17 @@ profileRouter.get('/search', requireAuth, async (req: AuthRequest, res: Response
   }
 
   const users = await ProfileService.search(query, limit);
+  res.json(users);
+});
+
+// Blind Hashing Search
+profileRouter.post('/search/blind', requireAuth, async (req: AuthRequest, res: Response) => {
+  const { hashes } = req.body;
+  if (!hashes || !Array.isArray(hashes)) {
+    return res.status(400).json({ error: 'HASHES_REQUIRED' });
+  }
+
+  const users = await ProfileService.searchByHash(hashes);
   res.json(users);
 });
 

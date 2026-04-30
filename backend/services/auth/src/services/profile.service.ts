@@ -123,4 +123,34 @@ export class ProfileService {
       take: limit,
     });
   }
+
+  /**
+   * Blind Hashing: search public users by hashed email/phone.
+   * Assumes PostgreSQL pgcrypto is installed for 'digest'.
+   */
+  static async searchByHash(hashes: string[]) {
+    if (!hashes || hashes.length === 0) return [];
+
+    // Attempting to install pgcrypto if it doesn't exist
+    try {
+      await prisma.$executeRaw`CREATE EXTENSION IF NOT EXISTS pgcrypto;`;
+    } catch (e) {
+      logger.warn('Failed to ensure pgcrypto extension is installed', e);
+    }
+
+    try {
+      // Hashed emails must be lowercase SHA256 hex strings
+      const result = await prisma.$queryRaw`
+        SELECT id, username, display_name as "displayName", avatar_url as "avatarUrl"
+        FROM users
+        WHERE encode(digest(email, 'sha256'), 'hex') = ANY(${hashes}::text[])
+        AND deleted_at IS NULL
+        AND is_private = false
+      `;
+      return result;
+    } catch (e) {
+      logger.error('Blind hashing search failed', e);
+      return [];
+    }
+  }
 }

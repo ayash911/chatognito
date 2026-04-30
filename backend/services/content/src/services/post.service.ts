@@ -61,6 +61,8 @@ export class PostService {
           select: {
             likes: true,
             comments: true,
+            shares: true,
+            bookmarks: true,
           },
         },
       },
@@ -83,12 +85,17 @@ export class PostService {
    * Internal helper to check if a viewer can access an author's content.
    */
   private static async checkAccess(
-    viewerId: string,
+    viewerId: string | undefined,
     authorId: string,
     visibility: 'public' | 'followers' | 'private',
     authorIsPrivate: boolean,
   ) {
     if (viewerId === authorId) return;
+
+    if (!viewerId) {
+      if (visibility !== 'public' || authorIsPrivate) throw new Error('FORBIDDEN');
+      return;
+    }
 
     // 1. Check blocks
     const block = await prisma.block.findFirst({
@@ -167,6 +174,62 @@ export class PostService {
    */
   static async unlikePost(userId: string, postId: string) {
     await prisma.postLike.deleteMany({
+      where: { postId, userId },
+    });
+  }
+
+  /**
+   * Shares (reposts) a post.
+   */
+  static async sharePost(userId: string, postId: string) {
+    const post = await prisma.post.findUnique({
+      where: { id: postId, deletedAt: null },
+      include: { author: { select: { isPrivate: true } } },
+    });
+    if (!post) throw new Error('POST_NOT_FOUND');
+
+    await this.checkAccess(userId, post.authorId, post.visibility, post.author.isPrivate);
+
+    await prisma.postShare.upsert({
+      where: { postId_userId: { postId, userId } },
+      create: { postId, userId },
+      update: {},
+    });
+  }
+
+  /**
+   * Unshares a post.
+   */
+  static async unsharePost(userId: string, postId: string) {
+    await prisma.postShare.deleteMany({
+      where: { postId, userId },
+    });
+  }
+
+  /**
+   * Bookmarks a post.
+   */
+  static async bookmarkPost(userId: string, postId: string) {
+    const post = await prisma.post.findUnique({
+      where: { id: postId, deletedAt: null },
+      include: { author: { select: { isPrivate: true } } },
+    });
+    if (!post) throw new Error('POST_NOT_FOUND');
+
+    await this.checkAccess(userId, post.authorId, post.visibility, post.author.isPrivate);
+
+    await prisma.postBookmark.upsert({
+      where: { postId_userId: { postId, userId } },
+      create: { postId, userId },
+      update: {},
+    });
+  }
+
+  /**
+   * Unbookmarks a post.
+   */
+  static async unbookmarkPost(userId: string, postId: string) {
+    await prisma.postBookmark.deleteMany({
       where: { postId, userId },
     });
   }
@@ -322,6 +385,7 @@ export class PostService {
           select: {
             likes: true,
             comments: true,
+            shares: true,
           },
         },
       },
@@ -336,5 +400,88 @@ export class PostService {
     });
 
     return feed;
+  }
+
+  /**
+   * Retrieves a user's profile timeline.
+   */
+  static async getProfileTimeline(
+    targetUserId: string,
+    viewerId?: string,
+    limit = 20,
+    cursor?: string,
+  ) {
+    const targetUser = await prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { isPrivate: true },
+    });
+    if (!targetUser) throw new Error('USER_NOT_FOUND');
+
+    // Check if viewer can see this user's profile
+    await this.checkAccess(
+      viewerId,
+      targetUserId,
+      targetUser.isPrivate ? 'followers' : 'public',
+      targetUser.isPrivate,
+    );
+
+    return prisma.post.findMany({
+      where: {
+        authorId: targetUserId,
+        deletedAt: null,
+        visibility: viewerId === targetUserId ? undefined : { in: ['public', 'followers'] },
+      },
+      include: {
+        author: {
+          select: { id: true, username: true, displayName: true, avatarUrl: true },
+        },
+        media: true,
+        _count: {
+          select: { likes: true, comments: true, shares: true, bookmarks: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+    });
+  }
+
+  /**
+   * Searches public posts by text.
+   */
+  static async searchPosts(query: string, viewerId?: string, limit = 20, cursor?: string) {
+    // Basic search on public posts
+    let blockedIds: string[] = [];
+    if (viewerId) {
+      const blocks = await prisma.block.findMany({
+        where: { OR: [{ blockerId: viewerId }, { blockedId: viewerId }] },
+        select: { blockerId: true, blockedId: true },
+      });
+      blockedIds = Array.from(new Set(blocks.flatMap((b) => [b.blockerId, b.blockedId])));
+    }
+
+    return prisma.post.findMany({
+      where: {
+        content: { contains: query, mode: 'insensitive' },
+        deletedAt: null,
+        visibility: 'public',
+        author: {
+          isPrivate: false,
+          id: blockedIds.length > 0 ? { notIn: blockedIds } : undefined,
+        },
+      },
+      include: {
+        author: {
+          select: { id: true, username: true, displayName: true, avatarUrl: true },
+        },
+        media: true,
+        _count: {
+          select: { likes: true, comments: true, shares: true, bookmarks: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+    });
   }
 }
