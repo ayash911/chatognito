@@ -88,7 +88,7 @@ describe('Content Integration Tests', () => {
   describe('Engagement: Likes and Comments', () => {
     it('should like a post', async () => {
       const res = await request(contentRequest)
-        .post(`/content/posts/${postId}/like`)
+        .put(`/content/posts/${postId}/like`)
         .set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(200);
 

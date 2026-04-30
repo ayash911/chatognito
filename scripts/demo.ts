@@ -335,8 +335,8 @@ async function identityAndProfileTour(
 ) {
   section('3. Identity/profile APIs are exercised');
 
-  await api(AUTH_URL, '/identity/profile/me/2fa/enable', {
-    method: 'POST',
+  await api(AUTH_URL, '/identity/profile/me/2fa', {
+    method: 'PUT',
     token: maya.token,
   });
   logOk(`${maya.label} enabled mock 2FA`);
@@ -377,31 +377,31 @@ async function socialTour(
 ) {
   section('4. Social graph, friendship, and block rules');
 
-  await api(SOCIAL_URL, `/social/follow/${noah.id}`, {
-    method: 'POST',
+  await api(SOCIAL_URL, `/social/${noah.id}/follow`, {
+    method: 'PUT',
     token: maya.token,
     expectedStatuses: [200],
   });
   logOk(`${maya.label} followed ${noah.label}`);
 
-  await api(SOCIAL_URL, `/social/follow/${maya.id}`, {
-    method: 'POST',
+  await api(SOCIAL_URL, `/social/${maya.id}/follow`, {
+    method: 'PUT',
     token: noah.token,
     expectedStatuses: [200],
   });
   logOk(`${noah.label} followed ${maya.label}`);
 
-  const friendStatus = await api<Record<string, boolean>>(SOCIAL_URL, `/social/status/${noah.id}`, {
+  const friendStatus = await api<Record<string, boolean>>(SOCIAL_URL, `/social/${noah.id}/status`, {
     method: 'GET',
     token: maya.token,
   });
   logOk(`${maya.label} and ${noah.label} friend status: ${friendStatus.isFriend}`);
 
-  await api(SOCIAL_URL, `/social/followers/${maya.id}`, {
+  await api(SOCIAL_URL, `/social/${maya.id}/followers`, {
     method: 'GET',
     token: maya.token,
   });
-  await api(SOCIAL_URL, `/social/following/${maya.id}`, {
+  await api(SOCIAL_URL, `/social/${maya.id}/following`, {
     method: 'GET',
     token: maya.token,
   });
@@ -410,14 +410,14 @@ async function socialTour(
   await expectApiFailure(
     'self-follow is rejected',
     SOCIAL_URL,
-    `/social/follow/${maya.id}`,
-    { method: 'POST', token: maya.token },
+    `/social/${maya.id}/follow`,
+    { method: 'PUT', token: maya.token },
     400,
     'CANNOT_FOLLOW_SELF',
   );
 
-  await api(SOCIAL_URL, `/social/block/${maya.id}`, {
-    method: 'POST',
+  await api(SOCIAL_URL, `/social/${maya.id}/block`, {
+    method: 'PUT',
     token: priya.token,
   });
   logOk(`${priya.label} blocked ${maya.label}`);
@@ -435,8 +435,8 @@ async function socialTour(
     'FORBIDDEN',
   );
 
-  await api(SOCIAL_URL, `/social/unblock/${maya.id}`, {
-    method: 'POST',
+  await api(SOCIAL_URL, `/social/${maya.id}/block`, {
+    method: 'DELETE',
     token: priya.token,
   });
   logOk(`${priya.label} unblocked ${maya.label}`);
@@ -481,7 +481,7 @@ async function messagingTour(
   logOk('REST message edited');
 
   await api(MESSAGING_URL, `/messaging/conversations/${direct.id}/read`, {
-    method: 'POST',
+    method: 'PUT',
     token: noah.token,
   });
   logOk(`${noah.label} marked the direct conversation read`);
@@ -522,8 +522,8 @@ async function messagingTour(
   });
   logOk(`${maya.label} opened a direct conversation with ${priya.label}`);
 
-  await api(SOCIAL_URL, `/social/block/${maya.id}`, {
-    method: 'POST',
+  await api(SOCIAL_URL, `/social/${maya.id}/block`, {
+    method: 'PUT',
     token: priya.token,
   });
   await expectApiFailure(
@@ -538,8 +538,8 @@ async function messagingTour(
     403,
     'FORBIDDEN',
   );
-  await api(SOCIAL_URL, `/social/unblock/${maya.id}`, {
-    method: 'POST',
+  await api(SOCIAL_URL, `/social/${maya.id}/block`, {
+    method: 'DELETE',
     token: priya.token,
   });
 
@@ -731,7 +731,7 @@ async function contentTour(maya: DemoUserSession, noah: DemoUserSession, overvie
 
   // Social Interactions: Likes & Comments
   await api(CONTENT_URL, `/content/posts/${post1.id}/like`, {
-    method: 'POST',
+    method: 'PUT',
     token: noah.token,
   });
   logOk(`${noah.label} liked ${maya.label}'s post`);
@@ -761,7 +761,7 @@ async function contentTour(maya: DemoUserSession, noah: DemoUserSession, overvie
 
   // Edge Cases & Security Hardening
   await api(CONTENT_URL, `/content/posts/${post1.id}/like`, {
-    method: 'POST',
+    method: 'PUT',
     token: noah.token,
   });
   logOk('Like idempotency: Noah liked the same post again without error');

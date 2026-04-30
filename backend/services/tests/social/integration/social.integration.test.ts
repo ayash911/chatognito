@@ -42,24 +42,24 @@ describe('Social Integration Tests', () => {
   it('should follow and unfollow a user', async () => {
     // Follow
     const followRes = await request(socialTarget)
-      .post(`/social/follow/${userB.id}`)
+      .put(`/social/${userB.id}/follow`)
       .set('Authorization', `Bearer ${tokenA}`);
     expect(followRes.status).toBe(200);
 
     // Check status
     const statusRes = await request(socialTarget)
-      .get(`/social/status/${userB.id}`)
+      .get(`/social/${userB.id}/status`)
       .set('Authorization', `Bearer ${tokenA}`);
     expect(statusRes.body.isFollowing).toBe(true);
 
     // Unfollow
     const unfollowRes = await request(socialTarget)
-      .post(`/social/unfollow/${userB.id}`)
+      .delete(`/social/${userB.id}/follow`)
       .set('Authorization', `Bearer ${tokenA}`);
     expect(unfollowRes.status).toBe(200);
 
     const statusRes2 = await request(socialTarget)
-      .get(`/social/status/${userB.id}`)
+      .get(`/social/${userB.id}/status`)
       .set('Authorization', `Bearer ${tokenA}`);
     expect(statusRes2.body.isFollowing).toBe(false);
   });
@@ -67,15 +67,15 @@ describe('Social Integration Tests', () => {
   it('should detect mutual follows as friends', async () => {
     // A follows B
     await request(socialTarget)
-      .post(`/social/follow/${userB.id}`)
+      .put(`/social/${userB.id}/follow`)
       .set('Authorization', `Bearer ${tokenA}`);
     // B follows A
     await request(socialTarget)
-      .post(`/social/follow/${userA.id}`)
+      .put(`/social/${userA.id}/follow`)
       .set('Authorization', `Bearer ${tokenB}`);
 
     const statusRes = await request(socialTarget)
-      .get(`/social/status/${userB.id}`)
+      .get(`/social/${userB.id}/status`)
       .set('Authorization', `Bearer ${tokenA}`);
 
     expect(statusRes.body.isFriend).toBe(true);
@@ -84,13 +84,13 @@ describe('Social Integration Tests', () => {
   it('should block a user and remove follows', async () => {
     // A blocks B
     const blockRes = await request(socialTarget)
-      .post(`/social/block/${userB.id}`)
+      .put(`/social/${userB.id}/block`)
       .set('Authorization', `Bearer ${tokenA}`);
     expect(blockRes.status).toBe(200);
 
     // Check status
     const statusRes = await request(socialTarget)
-      .get(`/social/status/${userB.id}`)
+      .get(`/social/${userB.id}/status`)
       .set('Authorization', `Bearer ${tokenA}`);
 
     expect(statusRes.body.isBlocking).toBe(true);
@@ -100,7 +100,7 @@ describe('Social Integration Tests', () => {
 
   it('should prevent following a blocked user', async () => {
     const res = await request(socialTarget)
-      .post(`/social/follow/${userB.id}`)
+      .put(`/social/${userB.id}/follow`)
       .set('Authorization', `Bearer ${tokenA}`);
 
     expect(res.status).toBe(403); // Should fail because B is blocked by A
@@ -109,7 +109,7 @@ describe('Social Integration Tests', () => {
   it('should prevent sending a message to a blocked user', async () => {
     // A blocks B
     await request(socialTarget)
-      .post(`/social/block/${userB.id}`)
+      .put(`/social/${userB.id}/block`)
       .set('Authorization', `Bearer ${tokenA}`);
 
     // Try to send a message from A to B
@@ -124,7 +124,7 @@ describe('Social Integration Tests', () => {
   it('should prevent sending a message from a blocked user', async () => {
     // A blocks B (so B cannot message A)
     await request(socialTarget)
-      .post(`/social/block/${userB.id}`)
+      .put(`/social/${userB.id}/block`)
       .set('Authorization', `Bearer ${tokenA}`);
 
     // Try to send a message from B to A
@@ -139,7 +139,7 @@ describe('Social Integration Tests', () => {
   it('should unblock a user and allow messaging again', async () => {
     // A unblocks B
     const unblockRes = await request(socialTarget)
-      .post(`/social/unblock/${userB.id}`)
+      .delete(`/social/${userB.id}/block`)
       .set('Authorization', `Bearer ${tokenA}`);
     expect(unblockRes.status).toBe(200);
 

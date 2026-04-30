@@ -85,7 +85,7 @@ describe('Profile Integration Tests', () => {
 
   it('should enable 2FA and return a secret', async () => {
     const res = await request(requestTarget)
-      .post('/identity/profile/me/2fa/enable')
+      .put('/identity/profile/me/2fa')
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);

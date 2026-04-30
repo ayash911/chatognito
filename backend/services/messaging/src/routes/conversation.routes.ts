@@ -109,7 +109,7 @@ conversationRouter.patch(
 );
 
 // Mark conversation as read
-conversationRouter.post('/:conversationId/read', async (req: AuthRequest, res: Response) => {
+conversationRouter.put('/:conversationId/read', async (req: AuthRequest, res: Response) => {
   await MessageService.markRead(req.params.conversationId, req.user!.userId);
   res.json({ success: true });
 });

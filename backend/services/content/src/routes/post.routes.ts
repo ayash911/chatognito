@@ -52,7 +52,7 @@ contentRouter.delete('/posts/:id', requireAuth, async (req: AuthRequest, res) =>
 });
 
 // Likes
-contentRouter.post('/posts/:id/like', requireAuth, async (req: AuthRequest, res) => {
+contentRouter.put('/posts/:id/like', requireAuth, async (req: AuthRequest, res) => {
   await PostService.likePost(req.user!.userId, req.params.id);
   res.json({ success: true });
 });
