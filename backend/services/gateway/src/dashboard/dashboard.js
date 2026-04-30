@@ -1,5 +1,3 @@
-import { io } from 'socket.io-client';
-
 const socket = io({ query: { type: 'dashboard' } });
 const healthGrid = document.getElementById('healthGrid');
 const logContainer = document.getElementById('logContainer');
